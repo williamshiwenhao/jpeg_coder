@@ -2,10 +2,11 @@
 #ifndef __UTILITIES_H__
 #define __UTILITIES_H__
 #include "types.h"
-Img<YCbCr> ImgRgb2YCbCr(const Img<Rgb> );
-Img<Rgb> ImgYCbCr2Rgb(const Img<YCbCr>);
+Img<Yuv> ImgRgb2YCbCr(const Img<Rgb> );
+Img<Rgb> ImgYCbCr2Rgb(const Img<Yuv>);
 
-inline YCbCr Rgb2YCbCr(const Rgb);
-inline Rgb YCbCr2Rgb(const YCbCr);
+inline Yuv Rgb2YCbCr(const Rgb);
+inline Rgb YCbCr2Rgb(const Yuv);
+inline uint8_t ColorCast(const double);
 
 #endif/*__UTILITIES_H__*/

@@ -5,18 +5,16 @@
 
 #include "bmp.h"
 #include "types.h"
+#include "jpeg.h"
 
 using namespace std;
 
 string sourceFile = "test.bmp";
-string jpegFile = "C:\\Users\\william\\Pictures\\test.jpeg";
+string jpegFile = "test.jpeg";
 string bmpFile = "test1.bmp";
 bool CheckStatified(double* coded, int* column, int* row, size_t codedSize, size_t HSize);
 int main()
 {
-	printf("Hello world\n");
-	Img<Rgb> img = bmp::ReadBmp(sourceFile.c_str());
-	bmp::WriteBmp(bmpFile.c_str(), img);
-	delete[] img.data;
+	jpeg::test(sourceFile.c_str(), bmpFile.c_str());
 	return 0;
 }

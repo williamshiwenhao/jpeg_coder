@@ -9,7 +9,7 @@ struct Rgb {
 	uint8_t b;
 };
 
-struct YCbCr {
+struct Yuv {
 	uint8_t y;
 	uint8_t cb;
 	uint8_t cr;

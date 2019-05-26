@@ -32,9 +32,10 @@ namespace bmp {
 				int idx = y * w + x;
 				COLORREF color = img.GetPixel(x, y);
 				Rgb &target = data[idx];
-				target.b = (color >> 16) & 0xff;
-				target.g = (color >> 8) & 0xff;
-				target.r = color & 0xff;
+				uint8_t * cColor = (uint8_t*)&color;
+				target.r = cColor[0];
+				target.g = cColor[1];
+				target.b = cColor[2];
 			}
 		}
 		rgbImg.data = data;
