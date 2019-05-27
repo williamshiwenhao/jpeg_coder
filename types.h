@@ -29,4 +29,21 @@ struct ImgChannel {
 	std::vector<double> y, cb, cr;
 };
 
+struct Block {
+	int size = 0;
+	int y[64] = {};
+	int u[64] = {};
+	int v[64] = {};
+};
+
+struct ImgBlock {
+	int w, h, wb, hb;
+	std::vector<Block> data;
+};
+
+struct Symbol {
+	uint64_t val;
+	int length;
+};
+
 #endif // !__TYPE_H__

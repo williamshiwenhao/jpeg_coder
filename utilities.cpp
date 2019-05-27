@@ -46,6 +46,8 @@ inline uint8_t ColorCast(const double dc) {
 	return static_cast<uint8_t>(dc);
 }
 
+static const int dctBase = 128;
+
 ImgChannel Img2Channel(Img<Yuv> img) {
 	ImgChannel ans;
 	ans.w = img.w;
@@ -55,9 +57,9 @@ ImgChannel Img2Channel(Img<Yuv> img) {
 	ans.cb.assign(ans.w*ans.h, 0);
 	ans.cr.assign(ans.w*ans.h, 0);
 	for (int i = 0; i < imgSize; ++i) {
-		ans.y[i] = img.data[i].y - 128;
-		ans.cb[i] = img.data[i].cb - 128;
-		ans.cr[i] = img.data[i].cr - 128;
+		ans.y[i] = img.data[i].y - dctBase;
+		ans.cb[i] = img.data[i].cb - dctBase;
+		ans.cr[i] = img.data[i].cr - dctBase;
 	}
 	return ans;
 }
@@ -69,9 +71,9 @@ Img<Yuv> Channel2Img(ImgChannel ch) {
 	int imgSize = ch.w * ch.h;
 	img.data = new Yuv[imgSize];
 	for (int i = 0; i < imgSize; ++i) {
-		img.data[i].y = ColorCast(ch.y[i] + 128);
-		img.data[i].cb = ColorCast(ch.cb[i] + 128);
-		img.data[i].cr = ColorCast(ch.cr[i] + 128);
+		img.data[i].y = ColorCast(ch.y[i] + dctBase);
+		img.data[i].cb = ColorCast(ch.cb[i] + dctBase);
+		img.data[i].cr = ColorCast(ch.cr[i] + dctBase);
 	}
-	return;
+	return img;
 }

@@ -16,7 +16,7 @@ namespace jpeg {
 		return ch;
 	}
 
-	Img<Yuv> FIDCT(ImgChannel& ch) {
+	Img<Yuv> FIDCT(ImgChannel ch) {
 		FDCTRaw(ch.w, ch.h, ch.y, IDCTCore);
 		FDCTRaw(ch.w, ch.h, ch.cb, IDCTCore);
 		FDCTRaw(ch.w, ch.h, ch.cr, IDCTCore);
