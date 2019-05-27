@@ -1,114 +1,76 @@
 #include <cmath>
+#include <vector>
 #include "utilities.h"
 #include "jpeg.h"
 
 namespace jpeg {
 	void DCTCore(double *);
 	void IDCTCore(double *);
-	Img<Yuv> DCTRaw(Img<Yuv> img, void(*core)(double*));
+	void FDCTRaw(int w, int h, std::vector<double> &data, void(*core)(double*));
 
-	Img<Yuv> DCT(Img<Yuv> img) {
-		return DCTRaw(img, DCTCore);
+	ImgChannel FDCT(Img<Yuv> img) {
+		ImgChannel ch = Img2Channel(img);
+		FDCTRaw(ch.w, ch.h, ch.y, DCTCore);
+		FDCTRaw(ch.w, ch.h, ch.cb, DCTCore);
+		FDCTRaw(ch.w, ch.h, ch.cr, DCTCore);
+		return ch;
 	}
 
-	Img<Yuv> IDCT(Img<Yuv> img) {
-		return DCTRaw(img, IDCTCore);
+	Img<Yuv> FIDCT(ImgChannel& ch) {
+		FDCTRaw(ch.w, ch.h, ch.y, IDCTCore);
+		FDCTRaw(ch.w, ch.h, ch.cb, IDCTCore);
+		FDCTRaw(ch.w, ch.h, ch.cr, IDCTCore);
+		return Channel2Img(ch);
 	}
 
-	Img<Yuv> DCTRaw(Img<Yuv> img, void(*core)(double*)) {
-		Img<Yuv> ans;
-		ans.w = img.w;
-		ans.h = img.h;
-		ans.data = new Yuv[ans.w * ans.h];
+	void FDCTRaw(int w, int h, std::vector<double> &data, void(*core)(double*)) {
+		if (data.size() != w * h) {
+			fprintf(stderr, "[Error] DCT error, w*h != data.size\n");
+			return;
+		}
 		double res[8];
- 		int wb = ceil(double(ans.w) / 8.0);
-		int hb = ceil(double(ans.h) / 8.0);
+		int wb = ceil(double(w) / 8.0);
+		int hb = ceil(double(h) / 8.0);
 		auto dctBlock = [&](int xb, int yb) {
 			//row
-			for (int color = 0; color < 3; ++color) {
-				for (int y = yb * 8; y < yb * 8 + 8; ++y) {
-					for (int i=0; i < 8; ++i) {
-						int x = xb * 8 + i;
-						if (x >= ans.w || y >= img.h) {
-							res[i] = 0;
-						}
-						else {
-							int idx = y * ans.w + x;
-							Yuv& data = img.data[idx];
-							switch (color) {
-							case 0:
-								res[i] = data.y;
-								break;
-							case 1:
-								res[i] = data.cb;
-								break;
-							case 2:
-								res[i] = data.cr;
-							}
-							res[i] = (res[i] - 128);
-						}
+			for (int y = yb * 8; y < yb * 8 + 8; ++y) {
+				for (int i = 0; i < 8; ++i) {
+					int x = xb * 8 + i;
+					if (x >= w || y >= h) {
+						res[i] = 0;
 					}
-					core(res);
-					for (int i = 0; i < 8; ++i) {
-						int x = xb * 8 + i;
-						if (x < ans.w && y < ans.h) {
-							int idx = y * ans.w + x;
-							Yuv& data = ans.data[idx];
-							switch (color) {
-							case 0:
-								data.y = ColorCast(res[i]);
-								break;
-							case 1:
-								data.cb = ColorCast(res[i]);
-								break;
-							case 2:
-								data.cr = ColorCast(res[i]);
-							}
-						}
+					else {
+						int idx = y * w + x;
+						res[i] = data[idx];
+					}
+				}
+				core(res);
+				for (int i = 0; i < 8; ++i) {
+					int x = xb * 8 + i;
+					if (x < w && y < h) {
+						int idx = y * w + x;
+						data[idx] = res[i];
 					}
 				}
 			}
 			//colom
-			for (int color = 0; color < 3; ++color) {
-				for (int x = xb * 8; x < xb * 8 + 8; ++x) {
-					for (int i = 0; i < 8; ++i) {
-						int y = yb * 8 + i;
-						if (x >= ans.w || y >= ans.h) {
-							res[i] = 0;
-						}
-						else {
-							int idx = y * ans.w + x;
-							Yuv& data = ans.data[idx];
-							switch (color) {
-							case 0:
-								res[i] = data.y;
-								break;
-							case 1:
-								res[i] = data.cb;
-								break;
-							case 2:
-								res[i] = data.cr;
-							}
-						}
+			for (int x = xb * 8; x < xb * 8 + 8; ++x) {
+				for (int i = 0; i < 8; ++i) {
+					int y = yb * 8 + i;
+					if (x >= w || y >= h) {
+						res[i] = 0;
 					}
-					core(res);
-					for (int i = 0; i < 8; ++i) {
-						int y = yb * 8 + i;
-						if (x < ans.w && y < ans.h) {
-							res[i] = res[i]  + 128;
-							int idx = y * ans.w + x;
-							Yuv& data = ans.data[idx];
-							switch (color) {
-							case 0:
-								data.y = ColorCast(res[i]);
-								break;
-							case 1:
-								data.cb = ColorCast(res[i]);
-								break;
-							case 2:
-								data.cr = ColorCast(res[i]);
-							}
-						}
+					else {
+						int idx = y * w + x;
+						res[i] = data[idx];
+					}
+				}
+				core(res);
+				for (int i = 0; i < 8; ++i) {
+					int y = yb * 8 + i;
+					if (x < w && y < h) {
+						int idx = y * w + x;
+						data[idx] = res[i];
 					}
 				}
 			}
@@ -118,7 +80,6 @@ namespace jpeg {
 				dctBlock(xb, yb);
 			}
 		}
-		return ans;
 	}
 
 	static const double S[] = {

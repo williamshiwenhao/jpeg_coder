@@ -8,5 +8,7 @@ Img<Rgb> ImgYCbCr2Rgb(const Img<Yuv>);
 inline Yuv Rgb2YCbCr(const Rgb);
 inline Rgb YCbCr2Rgb(const Yuv);
 inline uint8_t ColorCast(const double);
+ImgChannel Img2Channel(Img<Yuv> img);
+Img<Yuv> Channel2Img(ImgChannel ch);
 
 #endif/*__UTILITIES_H__*/

@@ -10,8 +10,8 @@
 namespace jpeg {
 
 	void test(const char* source, const char* target);
-	Img<Yuv> DCT(Img<Yuv>);
-	Img<Yuv> IDCT(Img<Yuv>);
+	ImgChannel FDCT(Img<Yuv>);
+	Img<Yuv> FIDCT(ImgChannel&);
 
 };//namespace jpeg
 

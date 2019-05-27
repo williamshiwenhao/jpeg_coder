@@ -45,3 +45,33 @@ inline uint8_t ColorCast(const double dc) {
 		return 255;
 	return static_cast<uint8_t>(dc);
 }
+
+ImgChannel Img2Channel(Img<Yuv> img) {
+	ImgChannel ans;
+	ans.w = img.w;
+	ans.h = img.h;
+	int imgSize = ans.w * ans.h;
+	ans.y.assign(ans.w*ans.h, 0);
+	ans.cb.assign(ans.w*ans.h, 0);
+	ans.cr.assign(ans.w*ans.h, 0);
+	for (int i = 0; i < imgSize; ++i) {
+		ans.y[i] = img.data[i].y - 128;
+		ans.cb[i] = img.data[i].cb - 128;
+		ans.cr[i] = img.data[i].cr - 128;
+	}
+	return ans;
+}
+
+Img<Yuv> Channel2Img(ImgChannel ch) {
+	Img<Yuv> img;
+	img.w = ch.w;
+	img.h = ch.h;
+	int imgSize = ch.w * ch.h;
+	img.data = new Yuv[imgSize];
+	for (int i = 0; i < imgSize; ++i) {
+		img.data[i].y = ColorCast(ch.y[i] + 128);
+		img.data[i].cb = ColorCast(ch.cb[i] + 128);
+		img.data[i].cr = ColorCast(ch.cr[i] + 128);
+	}
+	return;
+}
