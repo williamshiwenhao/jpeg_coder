@@ -24,26 +24,33 @@ struct Img {
 	Img() :w(0), h(0), data(NULL) {}
 };
 
-struct ImgChannel {
-	int w, h;
-	std::vector<double> y, cb, cr;
-};
 
+template<class T>
 struct Block {
-	int size = 0;
-	int y[64] = {};
-	int u[64] = {};
-	int v[64] = {};
+	T y[64] = {};
+	T u[64] = {};
+	T v[64] = {};
 };
 
+template<class T>
 struct ImgBlock {
 	int w, h, wb, hb;
-	std::vector<Block> data;
+	std::vector<Block<T>> data;
 };
 
 struct Symbol {
-	uint64_t val;
+	uint32_t val;
 	int length;
+};
+
+struct BlockCode {
+	Symbol ydc,udc,vdc;
+	std::vector<std::pair<uint8_t, Symbol>> yac, uac, vac;//<zeroNumber|size, number in vli>
+};
+
+struct ImgBlockCode {
+	int w, h, wb, hb;
+	std::vector<BlockCode> data;
 };
 
 #endif // !__TYPE_H__

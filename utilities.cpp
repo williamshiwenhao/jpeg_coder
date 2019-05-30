@@ -38,7 +38,8 @@ inline Rgb YCbCr2Rgb(const Yuv y) {
 	return r;
 }
 
-inline uint8_t ColorCast(const double dc) {
+template<class T>
+inline uint8_t ColorCast(const T& dc) {
 	if (dc < 0)
 		return 0;
 	if (dc > 255)
@@ -46,34 +47,51 @@ inline uint8_t ColorCast(const double dc) {
 	return static_cast<uint8_t>(dc);
 }
 
-static const int dctBase = 128;
-
-ImgChannel Img2Channel(Img<Yuv> img) {
-	ImgChannel ans;
-	ans.w = img.w;
-	ans.h = img.h;
-	int imgSize = ans.w * ans.h;
-	ans.y.assign(ans.w*ans.h, 0);
-	ans.cb.assign(ans.w*ans.h, 0);
-	ans.cr.assign(ans.w*ans.h, 0);
-	for (int i = 0; i < imgSize; ++i) {
-		ans.y[i] = img.data[i].y - dctBase;
-		ans.cb[i] = img.data[i].cb - dctBase;
-		ans.cr[i] = img.data[i].cr - dctBase;
+static const double dctBase = 128;
+ImgBlock<double> Img2Block(Img<Yuv> img) {
+	int wb = (img.w >> 3) + ((img.w % 8 >0)?1 : 0);
+	int hb = (img.h >> 3) + ((img.h % 8 > 0) ? 1 : 0);
+	ImgBlock<double> block;
+	block.w = img.w;
+	block.h = img.h;
+	block.wb = wb;
+	block.hb = hb;
+	block.data = std::vector<Block<double>>(wb * hb);
+	for (int i = 0; i < img.w * img.h; ++i) {
+		int x = i % img.w;
+		int y = i / img.w;
+		int xb = x / 8;
+		int yb = y / 8;
+		int blkId = yb * wb + xb;
+		int xIn = x % 8;
+		int yIn = y % 8;
+ 		int inId = yIn * 8 + xIn;
+		block.data[blkId].y[inId] = img.data[i].y - dctBase;
+		block.data[blkId].u[inId] = img.data[i].cb - dctBase;
+		block.data[blkId].v[inId] = img.data[i].cr - dctBase;
 	}
-	return ans;
+	return block;
 }
 
-Img<Yuv> Channel2Img(ImgChannel ch) {
+Img<Yuv> Block2Img(ImgBlock<double>& block) {
+	int &wb = block.wb;
+	int &hb = block.hb;
 	Img<Yuv> img;
-	img.w = ch.w;
-	img.h = ch.h;
-	int imgSize = ch.w * ch.h;
-	img.data = new Yuv[imgSize];
-	for (int i = 0; i < imgSize; ++i) {
-		img.data[i].y = ColorCast(ch.y[i] + dctBase);
-		img.data[i].cb = ColorCast(ch.cb[i] + dctBase);
-		img.data[i].cr = ColorCast(ch.cr[i] + dctBase);
+	img.w = block.w;
+	img.h = block.h;
+	img.data = new Yuv[img.w * img.h];
+	for (int i = 0; i < img.w * img.h; ++i) {
+		int x = i % img.w;
+		int y = i / img.w;
+		int xb = x / 8;
+		int yb = y / 8;
+		int blkId = yb * wb + xb;
+		int xIn = x % 8;
+		int yIn = y % 8;
+		int inId = yIn * 8 + xIn;
+		img.data[i].y = ColorCast(block.data[blkId].y[inId] + dctBase);
+		img.data[i].cb = ColorCast(block.data[blkId].u[inId] + dctBase);
+		img.data[i].cr = ColorCast(block.data[blkId].v[inId] + dctBase);
 	}
 	return img;
 }

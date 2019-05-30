@@ -6,78 +6,49 @@
 namespace jpeg {
 	void DCTCore(double *);
 	void IDCTCore(double *);
-	void FDCTRaw(int w, int h, std::vector<double> &data, void(*core)(double*));
+	void FDCTRaw(Block<double> & block, void(*core)(double*));
 
-	ImgChannel FDCT(Img<Yuv> img) {
-		ImgChannel ch = Img2Channel(img);
-		FDCTRaw(ch.w, ch.h, ch.y, DCTCore);
-		FDCTRaw(ch.w, ch.h, ch.cb, DCTCore);
-		FDCTRaw(ch.w, ch.h, ch.cr, DCTCore);
-		return ch;
-	}
-
-	Img<Yuv> FIDCT(ImgChannel ch) {
-		FDCTRaw(ch.w, ch.h, ch.y, IDCTCore);
-		FDCTRaw(ch.w, ch.h, ch.cb, IDCTCore);
-		FDCTRaw(ch.w, ch.h, ch.cr, IDCTCore);
-		return Channel2Img(ch);
-	}
-
-	void FDCTRaw(int w, int h, std::vector<double> &data, void(*core)(double*)) {
-		if (data.size() != w * h) {
-			fprintf(stderr, "[Error] DCT error, w*h != data.size\n");
-			return;
+	ImgBlock<double> FDCT(ImgBlock<double> block) {
+		for (auto &b : block.data) {
+			FDCTRaw(b, DCTCore);
 		}
+		return block;
+	}
+
+	ImgBlock<double> FIDCT(ImgBlock<double> block) {
+		for (auto &b : block.data) {
+			FDCTRaw(b, IDCTCore);
+		}
+		return block;
+	}
+
+	void FDCTRaw(Block<double> & block, void(*core)(double*)) {
 		double res[8];
-		int wb = ceil(double(w) / 8.0);
-		int hb = ceil(double(h) / 8.0);
-		auto dctBlock = [&](int xb, int yb) {
-			//row
-			for (int y = yb * 8; y < yb * 8 + 8; ++y) {
-				for (int i = 0; i < 8; ++i) {
-					int x = xb * 8 + i;
-					if (x >= w || y >= h) {
-						res[i] = 0;
-					}
-					else {
-						int idx = y * w + x;
-						res[i] = data[idx];
-					}
+		//line
+		double* ptr[] = { block.y, block.u, block.v };
+		for (int color = 0; color < 3; ++color) {
+			for (int x = 0; x < 8; ++x) {
+				for (int y = 0; y < 8; ++y) {
+					int idx = y * 8 + x;
+					res[y] = ptr[color][idx];
 				}
 				core(res);
-				for (int i = 0; i < 8; ++i) {
-					int x = xb * 8 + i;
-					if (x < w && y < h) {
-						int idx = y * w + x;
-						data[idx] = res[i];
-					}
+				for (int y = 0; y < 8; ++y) {
+					int idx = y * 8 + x;
+					ptr[color][idx] = res[y];
 				}
 			}
-			//colom
-			for (int x = xb * 8; x < xb * 8 + 8; ++x) {
-				for (int i = 0; i < 8; ++i) {
-					int y = yb * 8 + i;
-					if (x >= w || y >= h) {
-						res[i] = 0;
-					}
-					else {
-						int idx = y * w + x;
-						res[i] = data[idx];
-					}
+
+			for (int y = 0; y < 8; ++y) {
+				for (int x = 0; x < 8; ++x) {
+					int idx = y * 8 + x;
+					res[x] = ptr[color][idx];
 				}
 				core(res);
-				for (int i = 0; i < 8; ++i) {
-					int y = yb * 8 + i;
-					if (x < w && y < h) {
-						int idx = y * w + x;
-						data[idx] = res[i];
-					}
+				for (int x = 0; x < 8; ++x) {
+					int idx = y * 8 + x;
+					ptr[color][idx] = res[x];
 				}
-			}
-		};
-		for (int xb = 0; xb < wb; xb++) {
-			for (int yb = 0; yb < hb; yb++) {
-				dctBlock(xb, yb);
 			}
 		}
 	}
