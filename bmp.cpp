@@ -1,5 +1,6 @@
 #include <cstring>
 #include <iostream>
+#include <atlimage.h>
 
 #include "bmp.h"
 #include "types.h"

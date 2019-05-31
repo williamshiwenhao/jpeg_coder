@@ -1,7 +1,7 @@
 #include "huffman.h"
 
 namespace jpeg {
-	ImgBlockCode RunLengthCoding(ImgBlock<int>& block) {
+	ImgBlockCode RunLengthCode(const ImgBlock<int>& block) {
 		ImgBlockCode code;
 		code.w = block.w;
 		code.h = block.h;
@@ -22,7 +22,7 @@ namespace jpeg {
 			lastUDc = block.data[i].u[0];
 			lastVDc = block.data[i].v[0];
 			/*get ac*********************************************************/
-			int* s[] = { block.data[i].y, block.data[i].u, block.data[i].v };
+			const int* s[] = { block.data[i].y, block.data[i].u, block.data[i].v };
 			std::vector<std::pair<uint8_t, Symbol> >* t[] = { &code.data[i].yac, &code.data[i].uac, &code.data[i].vac };
 			for (int color = 0; color < 3; ++color) {
 				int zeroNum = 0;
@@ -30,7 +30,7 @@ namespace jpeg {
 				auto tt = t[color];
 				//find eob
 				int eob = 0;
-				for (int i = 63; i >= 0; ++i) {
+				for (int i = 63; i >= 0; --i) {
 					if (ss[i] != 0) {
 						eob = i;
 						break;
@@ -61,7 +61,7 @@ namespace jpeg {
 		return code;
 	}
 
-	ImgBlock<int> RunLengthDecode(ImgBlockCode code) {
+	ImgBlock<int> RunLengthDecode(const ImgBlockCode& code) {
 		ImgBlock<int> block;
 		block.w = code.w;
 		block.h = code.h;
@@ -80,13 +80,14 @@ namespace jpeg {
 			block.data[i].u[0] = lastUDc;
 			block.data[i].v[0] = lastVDc;
 			int* t[] = { block.data[i].y, block.data[i].u, block.data[i].v };
-			std::vector<std::pair<uint8_t, Symbol> >* s[] = { &code.data[i].yac, &code.data[i].uac, &code.data[i].vac };
+			const std::vector<std::pair<uint8_t, Symbol> >* s[] = { &code.data[i].yac, &code.data[i].uac, &code.data[i].vac };
 			for (int color = 0; color < 3; ++color) {
 				int* tt = t[color];
-				std::vector<std::pair<uint8_t, Symbol>>& ss = *s[color];
+				const std::vector<std::pair<uint8_t, Symbol>>& ss = *s[color];
 				int idx = 1;
 				for (auto &p : ss) {
 					uint8_t head = p.first;
+					Symbol data = p.second;
 					int zeros = head >> 4;
 					idx += zeros;
 					if (idx >= 64)
@@ -94,8 +95,8 @@ namespace jpeg {
 						fprintf(stderr, "[Error] RunLengthDecode error, try to get idx > 64\n");
 						return block;
 					}
-					p.second.length = head & 0x0f;
-					tt[idx] = DeVLI(p.second);
+					data.length = head & 0x0f;
+					tt[idx] = DeVLI(data);
 					idx++;
 				}
 			}

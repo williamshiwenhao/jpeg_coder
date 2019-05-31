@@ -19,10 +19,11 @@ namespace jpeg {
 		ImgBlock<double> dct = FDCT(block);
 		ImgBlock<int> quant = Quant(dct);
 		ZigZag<int>(quant);
+		ImgBlockCode code = RunLengthCode(quant);
 
-
-		IZigZag<int>(quant);
-		ImgBlock<double> dquant = Iquant(quant);
+		ImgBlock<int> decode = RunLengthDecode(code);
+		IZigZag<int>(decode);
+		ImgBlock<double> dquant = Iquant(decode);
 		ImgBlock<double> idct = FIDCT(dquant);
 		Img<Yuv> iblock = Block2Img(idct);
 

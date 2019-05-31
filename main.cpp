@@ -9,9 +9,9 @@
 
 using namespace std;
 
-string sourceFile = "test1.bmp";
-string jpegFile = "result1.jpeg";
-string bmpFile = "result1.bmp";
+string sourceFile = "test2.bmp";
+string jpegFile = "result2.jpeg";
+string bmpFile = "result2.bmp";
 bool CheckStatified(double* coded, int* column, int* row, size_t codedSize, size_t HSize);
 int main()
 {

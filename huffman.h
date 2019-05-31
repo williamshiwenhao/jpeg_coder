@@ -8,7 +8,8 @@
 #include "types.h"
 
 namespace jpeg {
-	ImgBlockCode RunLengthCoding(ImgBlock<int>& block);
+	ImgBlockCode RunLengthCode(const ImgBlock<int>& block);
+	ImgBlock<int> RunLengthDecode(const ImgBlockCode& code);
 	Symbol GetVLI(int val);
 	int DeVLI(Symbol s);
 	class Huffman {
