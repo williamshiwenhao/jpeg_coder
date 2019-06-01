@@ -140,21 +140,38 @@ namespace jpeg {
 		printf("C Ac table\n");
 		uvAcHuff.PrintTable();
 		auto PrintErr = [](std::string msg = "") {
-			fprintf(stderr, "[Error] Huffman Encode error %s\n", msg);
+			fprintf(stderr, "[Error] Huffman Encode error %s\n", msg.data());
 		};
 
 		for (auto &b : block.data) {
 			Symbol s;
-			//Y
-			if (yDcHuff.Encode(b.ydc.length, s)) {
-				PrintErr("Dc");
-				return -1;
-			}
-			stream.Add(s);
-			for (auto &val : b.yac) {
-				if(yAcHuff.Encode(val.first, s))
+			Symbol *dc[] = { &b.ydc, &b.udc, &b.vdc };
+			std::vector<std::pair<uint8_t, Symbol>>* ac[] = { &b.yac, &b.uac, &b.vac };
+			Huffman *dcCoder[] = {&yDcHuff, &uvDcHuff, &uvDcHuff};
+			Huffman *acCoder[] = {&yAcHuff, &uvAcHuff, &uvAcHuff};
+			for (int color = 0; color < 3; ++color) {
+				if (dcCoder[color]->Encode(dc[color]->length, s)) {
+					PrintErr("Dc");
+					return -1;
+				}
+				stream.Add(s);
+				stream.Add(*dc[color]);
+				for (auto &val : *ac[color]) {
+					if (acCoder[color]->Encode(val.first, s)) {
+						PrintErr("Ac");
+						return -1;
+					}
+					stream.Add(s);
+					stream.Add(val.second);
+				}
 			}
 		}
+		return 0;
+	}
+
+	int HuffmanDecode(BitStream& s, ImgBlockCode &code)
+	{
+
 		return 0;
 	}
 
@@ -353,7 +370,7 @@ namespace jpeg {
 		int idx = 0;
 		for (int i = 0; i < 16; ++i) {
 			for (int j = 0; j < bitSize[i]; ++j) {
-				symbolMap.emplace(s, bitTable[idx++]);
+				valueMap.emplace(s, bitTable[idx++]);
 				s.val++;
 			}
 			s.length++;

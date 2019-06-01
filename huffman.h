@@ -11,6 +11,7 @@ namespace jpeg {
 	ImgBlockCode RunLengthCode(const ImgBlock<int>& block);
 	ImgBlock<int> RunLengthDecode(const ImgBlockCode& code);
 	int HuffmanEncode(ImgBlockCode &, BitStream&);
+	int HuffmanDecode(BitStream& , ImgBlockCode&);
 	Symbol GetVLI(int val);
 	int DeVLI(Symbol s);
 	class Huffman {

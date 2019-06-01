@@ -41,6 +41,7 @@ struct ImgBlock {
 struct Symbol {
 	uint32_t val;
 	int length;
+	bool operator<(const Symbol& s)const { return val < s.val; }
 };
 
 struct BlockCode {

@@ -20,7 +20,11 @@ namespace jpeg {
 		ImgBlock<int> quant = Quant(dct);
 		ZigZag<int>(quant);
 		ImgBlockCode code = RunLengthCode(quant);
-		//HuffmanEncode(code);
+		BitStream imgStream;
+		if (HuffmanEncode(code, imgStream)) {
+			fprintf(stderr, "[Error] Huffman encode error\n");
+		}
+		printf("Code size = %d\n", imgStream.GetData(NULL));
 
 		ImgBlock<int> decode = RunLengthDecode(code);
 		IZigZag<int>(decode);
@@ -156,6 +160,27 @@ namespace jpeg {
 		}
 	}
 
+	int BitStream::Get(Symbol & s)
+	{
+		if (s.length > 16 || s.length < 0) {
+			fprintf(stderr, "[Error] Bitstream get length %d\n", s.length);
+			return -1;
+		}
+		int bitPtr = 8 - head;
+		int diff = bitPtr - s.length;
+		if (diff > 0) {
+			//now byte is enough
+			s.val = (uint32_t)(data[readIdx] >> diff) & (uint32_t)((1<<s.length) - 1);
+			head -= s.length;
+		}
+		else {//TODO
+			int remainLength = s.length - bitPtr;
+			uint32_t res;
+			res = data[readIdx] >> head;
+		}
+		return 0;
+	}
+
 	int BitStream::print()
 	{
 		for (auto & i : data) {
@@ -163,6 +188,13 @@ namespace jpeg {
 		}
 		printf("\n");
 		return data.size() * 8 - remain;
+	}
+
+	int BitStream::GetData(uint8_t ** t)
+	{
+		if(t != NULL)
+			*t = data.data();
+		return data.size();
 	}
 
 };//namespace jpeg
