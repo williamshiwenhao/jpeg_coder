@@ -20,6 +20,7 @@ namespace jpeg {
 		ImgBlock<int> quant = Quant(dct);
 		ZigZag<int>(quant);
 		ImgBlockCode code = RunLengthCode(quant);
+		//HuffmanEncode(code);
 
 		ImgBlock<int> decode = RunLengthDecode(code);
 		IZigZag<int>(decode);
