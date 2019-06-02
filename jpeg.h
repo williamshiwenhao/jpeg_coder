@@ -24,16 +24,16 @@ namespace jpeg {
 
 	class BitStream {
 	public:
-		BitStream() :data(), remain(0) {};
 		void Add(const Symbol& s);
 		int Get(Symbol& s);
 		int print();//for debug
 		int GetData(uint8_t**);
+		void SetData(std::vector<uint8_t>::iterator begin, std::vector<uint8_t>::iterator end);
 	private:
-		std::vector<uint8_t> data;
-		int remain = 0;
+		std::vector<uint8_t> data ;
+		int tail = 8;
 		int head = 0;
-		int readIdx = 0;
+		unsigned int readIdx = 0;
 		
 	};
 

@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <vector>
 
+static const uint8_t ones[9] = { 0, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, 0xff };
+
 struct Rgb {
 	uint8_t r;
 	uint8_t g;

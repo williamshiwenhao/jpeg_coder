@@ -5,89 +5,122 @@
 
 #include "jpeg.h"
 #include "huffman.h"
+#include "utilities.h"
 
 namespace jpeg
 {
-
-void test(const char *source, const char *target)
-{
-	if (remove(target))
-	{
-		fprintf(stderr, "[Warning] Delete failed\n");
-	}
-	Img<Rgb> img = bmp::ReadBmp(source);
-	Img<Yuv> imgy = ImgRgb2YCbCr(img);
-	ImgBlock<double> block = Img2Block(imgy);
-	ImgBlock<double> dct = FDCT(block);
-	ImgBlock<int> quant = Quant(dct);
-	ZigZag<int>(quant);
-	ImgBlockCode code = RunLengthCode(quant);
-	BitStream imgStream;
-	if (HuffmanEncode(code, imgStream))
-	{
-		fprintf(stderr, "[Error] Huffman encode error\n");
-	}
-	printf("Code size = %d\n", imgStream.GetData(NULL));
-
-	ImgBlock<int> decode = RunLengthDecode(code);
-	IZigZag<int>(decode);
-	ImgBlock<double> dquant = Iquant(decode);
-	ImgBlock<double> idct = FIDCT(dquant);
-	Img<Yuv> iblock = Block2Img(idct);
-
-	Img<Rgb> imgrgb = ImgYCbCr2Rgb(iblock);
-	bmp::WriteBmp(target, imgrgb);
-}
-
-//Quant
-template <class T>
-ImgBlock<int> Quant(T &block, int level)
-{
-	int *yTable = GetYTable(level);
-	int *uvTable = GetUvTable(level);
-	ImgBlock<int> ans;
-	ans.w = block.w;
-	ans.h = block.h;
-	ans.wb = block.wb;
-	ans.hb = block.hb;
-	ans.data = std::vector<Block<int>>(ans.wb * ans.hb);
-	for (int i = 0; i < ans.wb * ans.hb; ++i)
-	{
-		for (int j = 0; j < 64; ++j)
-		{
-			ans.data[i].y[j] = static_cast<int>(block.data[i].y[j] / yTable[j]);
-			ans.data[i].u[j] = static_cast<int>(block.data[i].u[j] / uvTable[j]);
-			ans.data[i].v[j] = static_cast<int>(block.data[i].v[j] / uvTable[j]);
+	void BitStreamTest() {
+		std::vector<int> ones;
+		for (int i = 0; i <= 16; ++i) {
+			ones.push_back((1 << i) - 1);
+		}
+		BitStream stream;
+		const int TESTSIZE = 1 << 20;
+		std::random_device rd;
+		std::mt19937 gen(rd());
+		std::uniform_int_distribution<int> length(1, 16);
+		std::uniform_int_distribution<int> value(0, (1 << 16) - 1);
+		std::vector<Symbol> data;
+		printf("Adding\n");
+		for (int i = 0; i < TESTSIZE; ++i) {
+			Symbol s;
+			s.length = length(gen);
+			s.val = value(gen) & ones[s.length];
+			data.push_back(s);
+			stream.Add(s);
+		}
+		printf("Geting\n");
+		for (int i = 0; i < TESTSIZE; ++i) {
+			Symbol s;
+			s.length = data[i].length;
+			if (stream.Get(s)) {
+				fprintf(stderr, "Get error\n");
+			}
+			if (s.val != data[i].val) {
+				fprintf(stderr, "%d Value not equel, original value = %x now value = %x\n",i+1,  data[i].val, s.val);
+			}
 		}
 	}
-	return ans;
-}
 
-template <class T>
-ImgBlock<double> Iquant(T &block, int level)
-{
-	int *yTable = GetYTable(level);
-	int *uvTable = GetUvTable(level);
-	ImgBlock<double> ans;
-	ans.w = block.w;
-	ans.h = block.h;
-	ans.wb = block.wb;
-	ans.hb = block.hb;
-	ans.data = std::vector<Block<double>>(ans.wb * ans.hb);
-	for (int i = 0; i < ans.wb * ans.hb; ++i)
+	void test(const char *source, const char *target)
 	{
-		for (int j = 0; j < 64; ++j)
+		if (remove(target))
 		{
-			ans.data[i].y[j] = block.data[i].y[j] * yTable[j];
-			ans.data[i].u[j] = block.data[i].u[j] * uvTable[j];
-			ans.data[i].v[j] = block.data[i].v[j] * uvTable[j];
+			fprintf(stderr, "[Warning] Delete failed\n");
 		}
-	}
-	return ans;
-}
+		Img<Rgb> img = bmp::ReadBmp(source);
+		Img<Yuv> imgy = ImgRgb2YCbCr(img);
+		ImgBlock<double> block = Img2Block(imgy);
+		ImgBlock<double> dct = FDCT(block);
+		ImgBlock<int> quant = Quant(dct);
+		ZigZag<int>(quant);
+		ImgBlockCode code = RunLengthCode(quant);
+		BitStream imgStream;
+		if (HuffmanEncode(code, imgStream))
+		{
+			fprintf(stderr, "[Error] Huffman encode error\n");
+		}
+		printf("Code size = %d\n", imgStream.GetData(NULL));
 
-//ZigZag
-static const int ZIGZAG[64] =
+		ImgBlock<int> decode = RunLengthDecode(code);
+		IZigZag<int>(decode);
+		ImgBlock<double> dquant = Iquant(decode);
+		ImgBlock<double> idct = FIDCT(dquant);
+		Img<Yuv> iblock = Block2Img(idct);
+
+		Img<Rgb> imgrgb = ImgYCbCr2Rgb(iblock);
+		bmp::WriteBmp(target, imgrgb);
+	}
+
+	//Quant
+	template <class T>
+	ImgBlock<int> Quant(T &block, int level)
+	{
+		int *yTable = GetYTable(level);
+		int *uvTable = GetUvTable(level);
+		ImgBlock<int> ans;
+		ans.w = block.w;
+		ans.h = block.h;
+		ans.wb = block.wb;
+		ans.hb = block.hb;
+		ans.data = std::vector<Block<int>>(ans.wb * ans.hb);
+		for (int i = 0; i < ans.wb * ans.hb; ++i)
+		{
+			for (int j = 0; j < 64; ++j)
+			{
+				ans.data[i].y[j] = static_cast<int>(block.data[i].y[j] / yTable[j]);
+				ans.data[i].u[j] = static_cast<int>(block.data[i].u[j] / uvTable[j]);
+				ans.data[i].v[j] = static_cast<int>(block.data[i].v[j] / uvTable[j]);
+			}
+		}
+		return ans;
+	}
+
+	template <class T>
+	ImgBlock<double> Iquant(T &block, int level)
+	{
+		int *yTable = GetYTable(level);
+		int *uvTable = GetUvTable(level);
+		ImgBlock<double> ans;
+		ans.w = block.w;
+		ans.h = block.h;
+		ans.wb = block.wb;
+		ans.hb = block.hb;
+		ans.data = std::vector<Block<double>>(ans.wb * ans.hb);
+		for (int i = 0; i < ans.wb * ans.hb; ++i)
+		{
+			for (int j = 0; j < 64; ++j)
+			{
+				ans.data[i].y[j] = block.data[i].y[j] * yTable[j];
+				ans.data[i].u[j] = block.data[i].u[j] * uvTable[j];
+				ans.data[i].v[j] = block.data[i].v[j] * uvTable[j];
+			}
+		}
+		return ans;
+	}
+
+	//ZigZag
+	static const int ZIGZAG[64] =
 	{
 		0, 1, 8, 16, 9, 2, 3, 10,
 		17, 24, 32, 25, 18, 11, 4, 5,
@@ -96,160 +129,151 @@ static const int ZIGZAG[64] =
 		35, 42, 49, 56, 57, 50, 43, 36,
 		29, 22, 15, 23, 30, 37, 44, 51,
 		58, 59, 52, 45, 38, 31, 39, 46,
-		53, 60, 61, 54, 47, 55, 62, 63};
-template <class T>
-void ZigZag(ImgBlock<T> &block)
-{
-	Block<T> res;
-	for (int i = 0; i < block.wb * block.hb; ++i)
+		53, 60, 61, 54, 47, 55, 62, 63 };
+	template <class T>
+	void ZigZag(ImgBlock<T> &block)
 	{
-		T *s[] = {block.data[i].y, block.data[i].u, block.data[i].v};
-		T *t[] = {res.y, res.u, res.v};
-		for (int color = 0; color < 3; ++color)
+		Block<T> res;
+		for (int i = 0; i < block.wb * block.hb; ++i)
 		{
-			for (int j = 0; j < 64; ++j)
+			T *s[] = { block.data[i].y, block.data[i].u, block.data[i].v };
+			T *t[] = { res.y, res.u, res.v };
+			for (int color = 0; color < 3; ++color)
 			{
-				t[color][ZIGZAG[j]] = s[color][j];
-			}
-			for (int j = 0; j < 64; ++j)
-			{
-				s[color][j] = t[color][j];
+				for (int j = 0; j < 64; ++j)
+				{
+					t[color][ZIGZAG[j]] = s[color][j];
+				}
+				for (int j = 0; j < 64; ++j)
+				{
+					s[color][j] = t[color][j];
+				}
 			}
 		}
 	}
-}
 
-template <class T>
-void IZigZag(ImgBlock<T> &block)
-{
-	Block<T> res;
-	for (int i = 0; i < block.wb * block.hb; ++i)
+	template <class T>
+	void IZigZag(ImgBlock<T> &block)
 	{
-		T *s[] = {block.data[i].y, block.data[i].u, block.data[i].v};
-		T *t[] = {res.y, res.u, res.v};
-		for (int color = 0; color < 3; ++color)
+		Block<T> res;
+		for (int i = 0; i < block.wb * block.hb; ++i)
 		{
-			for (int j = 0; j < 64; ++j)
+			T *s[] = { block.data[i].y, block.data[i].u, block.data[i].v };
+			T *t[] = { res.y, res.u, res.v };
+			for (int color = 0; color < 3; ++color)
 			{
-				t[color][j] = s[color][ZIGZAG[j]];
+				for (int j = 0; j < 64; ++j)
+				{
+					t[color][j] = s[color][ZIGZAG[j]];
+				}
+				for (int j = 0; j < 64; ++j)
+				{
+					s[color][j] = t[color][j];
+				}
 			}
-			for (int j = 0; j < 64; ++j)
-			{
-				s[color][j] = t[color][j];
+		}
+	}
+
+	void BitStream::Add(const Symbol &s)
+	{
+		if (s.length > 16 || s.length < 0)
+		{
+			fprintf(stderr, "[Error] Bitstream add length %d\n", s.length);
+			return ;
+		}
+		int remainBit = 8 - tail;
+		if (remainBit > s.length) {
+			uint8_t& res = data.back();
+			SetBitByte(res, tail, s.length, s.val);
+			tail += s.length;
+		}
+		else {
+			int sPos = 0;
+			if (remainBit > 0) {
+				uint8_t res = GetBitSymbol(s, sPos, remainBit);
+				uint8_t &last = data.back();
+				SetBitByte(last, tail, remainBit, res);
+				sPos += remainBit;
+			}
+			tail = 8;
+			while (s.length - sPos > 8) {
+				uint8_t res = GetBitSymbol(s, sPos, 8);
+				data.push_back(res);
+				sPos += 8;
+			}
+			if (s.length - sPos > 0) {
+				tail = s.length - sPos;
+				uint8_t res = GetBitSymbol(s, sPos, tail);
+				uint8_t last = 0;
+				SetBitByte(last, 0, tail, res);
+				data.push_back(last);
 			}
 		}
 	}
-}
 
-static const uint8_t ones[9] = {0, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, 0xff};
-void BitStream::Add(const Symbol &s)
-{
-	int unfinished = s.length;
-	if (unfinished <= 0)
-		return;
-	if (remain != 0)
+	int BitStream::Get(Symbol &s)
 	{
-		uint8_t tail = data.back();
-		int diff = s.length - remain;
-		if (diff >= 0)
+		if (s.length > 16 || s.length < 0)
 		{
-			uint8_t add = (s.val >> diff) & ones[remain];
-			tail = tail & (~ones[remain]) | add;
-			data[data.size() - 1] = tail;
-			remain = 0;
-			unfinished = diff;
-		}
-		else
-		{
-			uint8_t add = (s.val << (-diff)) & ones[remain];
-			tail = tail & (~ones[remain]) | add;
-			data[data.size() - 1] = tail;
-			remain = -diff;
-			return;
-		}
-	}
-	while (unfinished > 8)
-	{
-		unfinished -= 8;
-		data.emplace_back(static_cast<uint8_t>((s.val >> unfinished) & ones[8]));
-	}
-	if (unfinished != 0)
-	{
-		remain = 8 - unfinished;
-		data.emplace_back(static_cast<uint8_t>((s.val << remain) & ones[8]));
-	}
-	else
-	{
-		remain = 0;
-	}
-}
-
-int BitStream::Get(Symbol &s)
-{
-	if (s.length > 16 || s.length < 0)
-	{
-		fprintf(stderr, "[Error] Bitstream get length %d\n", s.length);
-		return -1;
-	}
-	int remainBit = 8 - head; //remain bit of data[readIdx]
-	int diff = remainBit - s.length;
-	if (diff > 0)
-	{
-		//now byte is enough
-		s.val = (uint32_t)(data[readIdx] >> head) & ones[s.length];
-		head += s.length;
-	}
-	else
-	{ //TODO
-		int base = remainBit;
-		uint32_t res;
-		res = data[readIdx++] >> head;
-		s.val = res;
-		head = 0;
-		if (readIdx > data.size())
-		{
-			fprintf(stderr, "[Error] Bitstream error, there is no more bits\n");
+			fprintf(stderr, "[Error] Bitstream get length %d\n", s.length);
 			return -1;
 		}
-		while (s.length - base > 8)
-		{
-			res = data[readIdx++];
-			res <<= base;
-			base += 8;
-			s.val |= res;
-			if (readIdx > data.size())
-			{
-				fprintf(stderr, "[Error] Bitstream error, there is no more bits\n");
-				return -1;
+		s.val = 0;
+		int remainBit = 8 - head;
+		if (remainBit > s.length) {
+			s.val = GetBitByte(data[readIdx], head, s.length);
+			head += s.length;
+		}
+		else {
+			int sPos = 0;
+			uint8_t res = 0;
+			if (remainBit > 0) {
+				res = GetBitByte(data[readIdx], head, remainBit);
+				SetBitSymbol(s, sPos, remainBit, res);
+				sPos += remainBit;
+			}
+			readIdx++;
+			head = 0;
+			while (s.length - sPos >= 8) {
+				SetBitSymbol(s, sPos, 8, data[readIdx++]);
+				sPos += 8;
+				if (readIdx >= data.size()) {
+					fprintf(stderr, "[Error] Get bit more than have\n");
+					return -1;
+				}
+			}
+			if (s.length - sPos > 0) {
+				head = s.length - sPos;
+				res = GetBitByte(data[readIdx], 0, head);
+				SetBitSymbol(s, sPos, head, res);
 			}
 		}
-		if (s.length - base > 0)
-		{
-			diff = s.length - base;
-			res = data[readIdx] & ones[diff];
-			res <<= base;
-			s.val |= res;
-			head = diff;
-		}
+		return 0;
 	}
-	return 0;
-}
 
-int BitStream::print()
-{
-	for (auto &i : data)
+	int BitStream::print()
 	{
-		printf("%x ", i);
+		for (auto &i : data)
+		{
+			printf("%x ", i);
+		}
+		printf("\n");
+		return data.size() * 8 - tail;
 	}
-	printf("\n");
-	return data.size() * 8 - remain;
-}
 
-int BitStream::GetData(uint8_t **t)
-{
-	if (t != NULL)
-		*t = data.data();
-	return data.size();
-}
+	int BitStream::GetData(uint8_t **t)
+	{
+		if (t != NULL)
+			*t = data.data();
+		return data.size();
+	}
+
+	void BitStream::SetData(std::vector<uint8_t>::iterator begin, std::vector<uint8_t>::iterator end)
+	{
+		data = std::vector<uint8_t>(begin, end);
+		tail = 8;
+		head = 0;
+		readIdx = 0;
+	}
 
 }; //namespace jpeg

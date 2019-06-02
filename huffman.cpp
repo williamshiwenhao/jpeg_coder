@@ -112,6 +112,7 @@ namespace jpeg {
 
 	int HuffmanEncode(ImgBlockCode &block, BitStream& stream)
 	{
+		//4 huffman table are requaired
 		Huffman yDcHuff, yAcHuff, uvDcHuff, uvAcHuff;
 		//统计出现频次
 		for (auto &b : block.data) {
@@ -169,9 +170,46 @@ namespace jpeg {
 		return 0;
 	}
 
-	int HuffmanDecode(BitStream& s, ImgBlockCode &code)
+	int HuffmanDecode(BitStream& s, ImgBlockCode &code, Huffman& yDcHuff, Huffman& yAcHuff, Huffman& uvDcHuff, Huffman& uvAcHuff)
 	{
-
+		if (code.w == 0 || code.wb == 0 || code.h == 0 || code.hb == 0 || code.data.size() != code.hb *code.nb) {
+			fprintf(stderr, "[Error] Huffman decode need img size\n");
+			return -1;
+		}
+		int blockId = 0;
+		while (blockId < code.wb * code.hb) {
+			int color = 0;
+			BlockCode& b = code.data[blockId];
+			Symbol *dc[] = { &b.ydc, &b.udc, &b.vdc };
+			std::vector<std::pair<uint8_t, Symbol>>* ac[] = { &b.yac, &b.uac, &b.vac };
+			Huffman *dcCoder[] = { &yDcHuff, &uvDcHuff, &uvDcHuff };
+			Huffman *acCoder[] = { &yAcHuff, &uvAcHuff, &uvAcHuff };
+			Symbol readData;
+			readData.length = 0;
+			readData.val = 0;
+			for (int color = 0; color < 3;color++ ) {
+				Symbol tmp;
+				tmp.length = 1;
+				tmp.val = 0;
+				uint8_t dcLength = 0;
+				//Get Dc
+				do {
+					s.Get(tmp);
+					readData.length++;
+					readData.val = readData.val << 1 | tmp.val & 1;
+					if (readData.length > 16) {
+						fprintf(stderr, "[Error] Huffman decode error, dc decode error\n");
+						return -1;
+					}
+				} while (dcCoder[color]->Decode(readData, dcLength));
+				readData.length = dcLength;
+				if (s.Get(readData)) {
+					return -1;
+				}
+				
+			}
+			blockId++;
+		}
 		return 0;
 	}
 
