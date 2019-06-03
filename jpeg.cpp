@@ -17,7 +17,7 @@ void BitStreamTest()
 		ones.push_back((1 << i) - 1);
 	}
 	BitStream stream;
-	const int TESTSIZE = 1 << 20;
+	const int TESTSIZE = 1 << 16;
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<int> length(1, 16);
@@ -48,8 +48,38 @@ void BitStreamTest()
 	}
 }
 
+void findDiff(ImgBlockCode& s, ImgBlockCode& t) {
+	for (int i = 0; i < s.wb * s.hb; ++i) {
+		BlockCode &bs = s.data[i];
+		Symbol *dcs[] = { &bs.ydc, &bs.udc, &bs.vdc };
+		std::vector<std::pair<uint8_t, Symbol>> *acs[] = { &bs.yac, &bs.uac, &bs.vac };
+		BlockCode &bt = t.data[i];
+		Symbol *dct[] = { &bt.ydc, &bt.udc, &bt.vdc };
+		std::vector<std::pair<uint8_t, Symbol>> *act[] = { &bt.yac, &bt.uac, &bt.vac };
+		for (int color = 0; color < 3; ++color) {
+			//check dc
+			if (dcs[color]->val != dct[color]->val) {
+				printf("Dc error, block %d, color %d\n", i, color);
+			}
+			if (acs[color]->size() != acs[color]->size()) {
+				printf("Ac size not eque\n");
+			}
+			else {
+				for (int j = 0; j < acs[color]->size(); ++j) {
+					if ((*acs[color])[j].first != (*act[color])[j].first) {
+						printf("Ac value error\n");
+					}
+				}
+			}
+		}
+	}
+}
+
 void test(const char *source, const char *target)
 {
+	printf("Bit stream test\n");
+	BitStreamTest();
+	printf("Bit stream test finished\n");
 	if (remove(target))
 	{
 		fprintf(stderr, "[Warning] Delete failed\n");
@@ -63,6 +93,7 @@ void test(const char *source, const char *target)
 	ImgBlockCode code = RunLengthCode(quant);
 	BitStream imgStream;
 	Huffman yDcHuff, yAcHuff, uvDcHuff, uvAcHuff;
+	BuildHuffman(code, yDcHuff, yAcHuff, uvDcHuff, uvAcHuff);
 	if (HuffmanEncode(code, imgStream, yDcHuff, yAcHuff, uvDcHuff, uvAcHuff))
 	{
 		fprintf(stderr, "[Error] Huffman encode error\n");
@@ -79,6 +110,7 @@ void test(const char *source, const char *target)
 	{
 		fprintf(stderr, "[Error] Huffman decode error\n");
 	}
+	//findDiff(code, decode);
 	ImgBlock<int> deBlock = RunLengthDecode(decode);
 	IZigZag<int>(deBlock);
 	ImgBlock<double> dquant = Iquant(deBlock);
