@@ -19,6 +19,8 @@ public:
 	void PrintTable();
 	int Encode(uint8_t source, Symbol &target);
 	int Decode(Symbol &source, uint8_t &target);
+	const int* GetSize()const;
+	const std::vector<int>& GetTable()const;
 
 private:
 	void BuildSymbolMap();

@@ -2,10 +2,12 @@
 #include <random>
 #include <algorithm>
 #include <string>
+#include <fstream>
 
 #include "jpeg.h"
 #include "huffman.h"
 #include "utilities.h"
+#include "types.h"
 
 namespace jpeg
 {
@@ -75,6 +77,7 @@ void findDiff(ImgBlockCode& s, ImgBlockCode& t) {
 	}
 }
 
+
 void test(const char *source, const char *target)
 {
 	printf("Bit stream test\n");
@@ -98,7 +101,6 @@ void test(const char *source, const char *target)
 	{
 		fprintf(stderr, "[Error] Huffman encode error\n");
 	}
-
 	//Decode
 	ImgBlockCode decode;
 	decode.w = code.w;
@@ -191,7 +193,7 @@ void ZigZag(ImgBlock<T> &block)
 		{
 			for (int j = 0; j < 64; ++j)
 			{
-				t[color][ZIGZAG[j]] = s[color][j];
+				t[color][j] = s[color][ZIGZAG[j]];
 			}
 			for (int j = 0; j < 64; ++j)
 			{
@@ -213,7 +215,7 @@ void IZigZag(ImgBlock<T> &block)
 		{
 			for (int j = 0; j < 64; ++j)
 			{
-				t[color][j] = s[color][ZIGZAG[j]];
+				t[color][ZIGZAG[j]] = s[color][j];
 			}
 			for (int j = 0; j < 64; ++j)
 			{
@@ -334,6 +336,189 @@ void BitStream::SetData(std::vector<uint8_t>::iterator begin, std::vector<uint8_
 	tail = 8;
 	head = 0;
 	readIdx = 0;
+}
+
+int JpegWriter::Encode(const ::Img<Rgb>& s, int level)
+{
+	data.clear();
+	::Img<Yuv> imgy = ImgRgb2YCbCr(s);
+	ImgBlock<double> block = Img2Block(imgy);
+	ImgBlock<double> dct = FDCT(block);
+	ImgBlock<int> quant = Quant(dct,level);
+	ZigZag<int>(quant);
+	ImgBlockCode code = RunLengthCode(quant);
+	BitStream imgStream;
+	Huffman yDcHuff, yAcHuff, uvDcHuff, uvAcHuff;
+	BuildHuffman(code, yDcHuff, yAcHuff, uvDcHuff, uvAcHuff);
+	if (HuffmanEncode(code, imgStream, yDcHuff, yAcHuff, uvDcHuff, uvAcHuff))
+	{
+		fprintf(stderr, "[Error] Huffman encode error\n");
+		return -1;
+	}
+	//Write 
+	PicHead();
+	QuantTable(level);
+	PicInfo(s.w, s.h);
+	//huffman table
+	Huffman *huff[] = { &yDcHuff, &yAcHuff, &uvDcHuff, &uvAcHuff };
+	bool isDc[] = { true , false, true, false};
+	uint8_t htid[] = { 0 , 0 , 1, 1 };
+	for (int tables = 0; tables < 4; ++tables) {
+		const int* bitSize = huff[tables]->GetSize();
+		const std::vector<int>& bitTable = huff[tables]->GetTable();
+		HuffmanTable(bitSize, bitTable, isDc[tables], htid[tables]);
+	}
+	uint8_t *imgData = NULL;
+	int imgLength = imgStream.GetData(&imgData);
+	Img(imgData, imgLength);
+	return 0;
+}
+
+int JpegWriter::Write(const char * fileName)
+{
+	std::ofstream fd(fileName, std::ofstream::binary | std::ofstream::trunc);
+	if (!fd) {
+		fprintf(stderr, "[Error] Cannot open jpeg file\n");
+		return -1;
+	}
+	fd.write((char*)(data.data()), data.size());
+	fd.close();
+	return 0;
+}
+
+void JpegWriter::PicHead()
+{
+	static const uint8_t headInfo[] = {
+		0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00,
+		0x01, 0x01, 0x01, 0x00, 0x60, 0x00, 0x60, 0x00, 0x00
+	};
+	data.insert(data.end(), headInfo, headInfo + sizeof(headInfo));
+}
+
+void JpegWriter::QuantTable(int level)
+{
+	/*The first table, for Y**************************/
+	//write quanttable symbol
+	uint8_t res;
+	data.push_back(0xff);
+	data.push_back(0xdb);
+	//write table length
+	uint16_t length = 67;
+	Write16(length);
+	//write table id, first table
+	//low 4bit :id high 4bit precision
+	data.push_back(0x00);
+	int* yTable = GetYTable(level);
+	//zigzag quant table
+	for (int i = 0; i < 64; ++i) {
+		res = static_cast<uint8_t>(yTable[ZIGZAG[i]]);
+		data.push_back(res);
+	}
+	/*The second table, for C**************************/
+	//write quanttable symbol
+	data.push_back(0xff);
+	data.push_back(0xdb);
+	//write table length
+	Write16(length);
+	//write table id, second table
+	//low 4bit :id high 4bit precision
+	data.push_back(0x01);
+	int* uvTable = GetUvTable(level);
+	//zigzag quant table
+	for (int i = 0; i < 64; ++i) {
+		res = static_cast<uint8_t>(uvTable[ZIGZAG[i]]);
+		data.push_back(res);
+	}
+}
+
+void JpegWriter::PicInfo(uint16_t w, uint16_t h)
+{
+	//Id
+	data.push_back(0xff);
+	data.push_back(0xc0);
+	//length
+	uint16_t length = 17;
+	Write16(length);
+	data.push_back(0x08);//precision
+	Write16(h);//heigth
+	Write16(w);//weigth
+	data.push_back(0x03);//number of component,3 commonent for YCbCr
+	/*
+	Each component 3 byte
+	ID | Sample rate | Quant table id
+	Compoent id:
+	1: Y
+	2: Cb
+	3: Cr
+	4: I
+	5: Q
+	*/
+	uint8_t component[] = {
+		0x01, 0x11, 0,//Y
+		0x02, 0x11, 1,//Cb
+		0x03, 0x11, 1 //Cr
+	};
+	for (int i = 0; i < sizeof(component); ++i) {
+		data.push_back(component[i]);
+	}
+}
+
+void JpegWriter::HuffmanTable(const int* bitSize, const std::vector<int>& bitTable, bool isDc, uint8_t htid)
+{
+	data.push_back(0xff);
+	data.push_back(0xc4);
+	uint16_t length = static_cast<uint16_t>(2+1+16+bitTable.size());//length(2) + HT info(1) + Ref(16) + Val(huffman.length)
+	Write16(length);
+	//HT info
+	uint8_t htInfo = 0;
+	htInfo = htid & 0x0f;
+	if (!isDc) {
+		htInfo |= 0x10;
+	}
+	data.push_back(htInfo);
+	for (int i = 0; i < 16; ++i) {
+		data.push_back(static_cast<uint8_t>(bitSize[i]));
+	}
+	for (int i = 0; i < bitTable.size(); ++i) {
+		data.push_back(static_cast<uint8_t>(bitTable[i]));
+	}
+}
+
+void JpegWriter::Img(uint8_t * s, int length)
+{
+	//write header
+	data.push_back(0xff);
+	data.push_back(0xda);
+	uint16_t headLength = 12;
+	Write16(headLength);
+	data.push_back(3);//component number
+	/*
+	Each have its id and huffman table id;
+	Component id start from 1
+	table id:
+		high 4bit: DC table
+		low 4bit : Ac table
+	*/
+	uint8_t componentTable[] = {
+		1, 0x00,
+		2, 0x11,
+		3, 0x11
+	};
+	data.insert(data.end(), componentTable, componentTable + sizeof(componentTable));
+	//fixed value:Ss = 0x00, Se=63, Ah=Al=0x0(4bit)
+	data.push_back(0);
+	data.push_back(63);
+	data.push_back(0);
+	/*************************************************************************/
+	//write img
+	for (int i = 0; i < length; ++i) {
+		data.push_back(s[i]);
+		if (s[i] == 0xff)
+			data.push_back(0x00);
+	}
+	//End of data
+	data.push_back(0xff);
+	data.push_back(0xd9);
 }
 
 }; //namespace jpeg

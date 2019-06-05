@@ -469,6 +469,14 @@ int Huffman::Decode(Symbol &source, uint8_t &target)
 	target = it->second;
 	return 0;
 }
+const int * jpeg::Huffman::GetSize() const
+{
+	return bitSize;
+}
+const std::vector<int>& jpeg::Huffman::GetTable() const
+{
+	return bitTable;
+}
 void Huffman::BuildSymbolMap()
 {
 	symbolMap.clear();
