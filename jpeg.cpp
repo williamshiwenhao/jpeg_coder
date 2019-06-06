@@ -11,6 +11,18 @@
 
 namespace jpeg
 {
+
+	static const int ZIGZAG[64] =
+	{
+		0, 1, 8, 16, 9, 2, 3, 10,
+		17, 24, 32, 25, 18, 11, 4, 5,
+		12, 19, 26, 33, 40, 48, 41, 34,
+		27, 20, 13, 6, 7, 14, 21, 28,
+		35, 42, 49, 56, 57, 50, 43, 36,
+		29, 22, 15, 23, 30, 37, 44, 51,
+		58, 59, 52, 45, 38, 31, 39, 46,
+		53, 60, 61, 54, 47, 55, 62, 63 };
+
 void BitStreamTest()
 {
 	std::vector<int> ones;
@@ -50,295 +62,56 @@ void BitStreamTest()
 	}
 }
 
-void findDiff(ImgBlockCode& s, ImgBlockCode& t) {
-	for (int i = 0; i < s.wb * s.hb; ++i) {
-		BlockCode &bs = s.data[i];
-		Symbol *dcs[] = { &bs.ydc, &bs.udc, &bs.vdc };
-		std::vector<std::pair<uint8_t, Symbol>> *acs[] = { &bs.yac, &bs.uac, &bs.vac };
-		BlockCode &bt = t.data[i];
-		Symbol *dct[] = { &bt.ydc, &bt.udc, &bt.vdc };
-		std::vector<std::pair<uint8_t, Symbol>> *act[] = { &bt.yac, &bt.uac, &bt.vac };
-		for (int color = 0; color < 3; ++color) {
-			//check dc
-			if (dcs[color]->val != dct[color]->val) {
-				printf("Dc error, block %d, color %d\n", i, color);
-			}
-			if (acs[color]->size() != acs[color]->size()) {
-				printf("Ac size not eque\n");
-			}
-			else {
-				for (int j = 0; j < acs[color]->size(); ++j) {
-					if ((*acs[color])[j].first != (*act[color])[j].first) {
-						printf("Ac value error\n");
-					}
-				}
-			}
-		}
-	}
-}
+
+//void test(const char *source, const char *target)
+//{
+//	printf("Bit stream test\n");
+//	BitStreamTest();
+//	printf("Bit stream test finished\n");
+//	if (remove(target))
+//	{
+//		fprintf(stderr, "[Warning] Delete failed\n");
+//	}
+//	Img<Rgb> img = bmp::ReadBmp(source);
+//	Img<Yuv> imgy = ImgRgb2YCbCr(img);
+//	ImgBlock<double> block = Img2Block(imgy);
+//	ImgBlock<double> dct = FDCT(block);
+//	ImgBlock<int> quant = Quant(dct);
+//	ZigZag<int>(quant);
+//	ImgBlockCode code = RunLengthCode(quant);
+//	BitStream imgStream;
+//	Huffman yDcHuff, yAcHuff, uvDcHuff, uvAcHuff;
+//	BuildHuffman(code, yDcHuff, yAcHuff, uvDcHuff, uvAcHuff);
+//	if (HuffmanEncode(code, imgStream, yDcHuff, yAcHuff, uvDcHuff, uvAcHuff))
+//	{
+//		fprintf(stderr, "[Error] Huffman encode error\n");
+//	}
+//	//Decode
+//	ImgBlockCode decode;
+//	decode.w = code.w;
+//	decode.h = code.h;
+//	decode.wb = code.wb;
+//	decode.hb = code.hb;
+//	decode.data = std::vector<BlockCode>(decode.wb * decode.hb);
+//	if (HuffmanDecode(imgStream, decode, yDcHuff, yAcHuff, uvDcHuff, uvAcHuff))
+//	{
+//		fprintf(stderr, "[Error] Huffman decode error\n");
+//	}
+//	//findDiff(code, decode);
+//	ImgBlock<int> deBlock = RunLengthDecode(decode);
+//	IZigZag<int>(deBlock);
+//	ImgBlock<double> dquant = Iquant(deBlock);
+//	ImgBlock<double> idct = FIDCT(dquant);
+//	Img<Yuv> iblock = Block2Img(idct);
+//
+//	Img<Rgb> imgrgb = ImgYCbCr2Rgb(iblock);
+//	bmp::WriteBmp(target, imgrgb);
+//}
 
 
-void test(const char *source, const char *target)
-{
-	printf("Bit stream test\n");
-	BitStreamTest();
-	printf("Bit stream test finished\n");
-	if (remove(target))
-	{
-		fprintf(stderr, "[Warning] Delete failed\n");
-	}
-	Img<Rgb> img = bmp::ReadBmp(source);
-	Img<Yuv> imgy = ImgRgb2YCbCr(img);
-	ImgBlock<double> block = Img2Block(imgy);
-	ImgBlock<double> dct = FDCT(block);
-	ImgBlock<int> quant = Quant(dct);
-	ZigZag<int>(quant);
-	ImgBlockCode code = RunLengthCode(quant);
-	BitStream imgStream;
-	Huffman yDcHuff, yAcHuff, uvDcHuff, uvAcHuff;
-	BuildHuffman(code, yDcHuff, yAcHuff, uvDcHuff, uvAcHuff);
-	if (HuffmanEncode(code, imgStream, yDcHuff, yAcHuff, uvDcHuff, uvAcHuff))
-	{
-		fprintf(stderr, "[Error] Huffman encode error\n");
-	}
-	//Decode
-	ImgBlockCode decode;
-	decode.w = code.w;
-	decode.h = code.h;
-	decode.wb = code.wb;
-	decode.hb = code.hb;
-	decode.data = std::vector<BlockCode>(decode.wb * decode.hb);
-	if (HuffmanDecode(imgStream, decode, yDcHuff, yAcHuff, uvDcHuff, uvAcHuff))
-	{
-		fprintf(stderr, "[Error] Huffman decode error\n");
-	}
-	//findDiff(code, decode);
-	ImgBlock<int> deBlock = RunLengthDecode(decode);
-	IZigZag<int>(deBlock);
-	ImgBlock<double> dquant = Iquant(deBlock);
-	ImgBlock<double> idct = FIDCT(dquant);
-	Img<Yuv> iblock = Block2Img(idct);
 
-	Img<Rgb> imgrgb = ImgYCbCr2Rgb(iblock);
-	bmp::WriteBmp(target, imgrgb);
-}
 
-//Quant
-template <class T>
-ImgBlock<int> Quant(T &block, int level)
-{
-	int *yTable = GetYTable(level);
-	int *uvTable = GetUvTable(level);
-	ImgBlock<int> ans;
-	ans.w = block.w;
-	ans.h = block.h;
-	ans.wb = block.wb;
-	ans.hb = block.hb;
-	ans.data = std::vector<Block<int>>(ans.wb * ans.hb);
-	for (int i = 0; i < ans.wb * ans.hb; ++i)
-	{
-		for (int j = 0; j < 64; ++j)
-		{
-			ans.data[i].y[j] = static_cast<int>(block.data[i].y[j] / yTable[j]);
-			ans.data[i].u[j] = static_cast<int>(block.data[i].u[j] / uvTable[j]);
-			ans.data[i].v[j] = static_cast<int>(block.data[i].v[j] / uvTable[j]);
-		}
-	}
-	return ans;
-}
-
-template <class T>
-ImgBlock<double> Iquant(T &block, int level)
-{
-	int *yTable = GetYTable(level);
-	int *uvTable = GetUvTable(level);
-	ImgBlock<double> ans;
-	ans.w = block.w;
-	ans.h = block.h;
-	ans.wb = block.wb;
-	ans.hb = block.hb;
-	ans.data = std::vector<Block<double>>(ans.wb * ans.hb);
-	for (int i = 0; i < ans.wb * ans.hb; ++i)
-	{
-		for (int j = 0; j < 64; ++j)
-		{
-			ans.data[i].y[j] = block.data[i].y[j] * yTable[j];
-			ans.data[i].u[j] = block.data[i].u[j] * uvTable[j];
-			ans.data[i].v[j] = block.data[i].v[j] * uvTable[j];
-		}
-	}
-	return ans;
-}
-
-//ZigZag
-static const int ZIGZAG[64] =
-	{
-		0, 1, 8, 16, 9, 2, 3, 10,
-		17, 24, 32, 25, 18, 11, 4, 5,
-		12, 19, 26, 33, 40, 48, 41, 34,
-		27, 20, 13, 6, 7, 14, 21, 28,
-		35, 42, 49, 56, 57, 50, 43, 36,
-		29, 22, 15, 23, 30, 37, 44, 51,
-		58, 59, 52, 45, 38, 31, 39, 46,
-		53, 60, 61, 54, 47, 55, 62, 63};
-template <class T>
-void ZigZag(ImgBlock<T> &block)
-{
-	Block<T> res;
-	for (int i = 0; i < block.wb * block.hb; ++i)
-	{
-		T *s[] = {block.data[i].y, block.data[i].u, block.data[i].v};
-		T *t[] = {res.y, res.u, res.v};
-		for (int color = 0; color < 3; ++color)
-		{
-			for (int j = 0; j < 64; ++j)
-			{
-				t[color][j] = s[color][ZIGZAG[j]];
-			}
-			for (int j = 0; j < 64; ++j)
-			{
-				s[color][j] = t[color][j];
-			}
-		}
-	}
-}
-
-template <class T>
-void IZigZag(ImgBlock<T> &block)
-{
-	Block<T> res;
-	for (int i = 0; i < block.wb * block.hb; ++i)
-	{
-		T *s[] = {block.data[i].y, block.data[i].u, block.data[i].v};
-		T *t[] = {res.y, res.u, res.v};
-		for (int color = 0; color < 3; ++color)
-		{
-			for (int j = 0; j < 64; ++j)
-			{
-				t[color][ZIGZAG[j]] = s[color][j];
-			}
-			for (int j = 0; j < 64; ++j)
-			{
-				s[color][j] = t[color][j];
-			}
-		}
-	}
-}
-
-void BitStream::Add(const Symbol &s)
-{
-	if (s.length > 16 || s.length < 0)
-	{
-		fprintf(stderr, "[Error] Bitstream add length %d\n", s.length);
-		return;
-	}
-	int remainBit = 8 - tail;
-	if (remainBit > s.length)
-	{
-		uint8_t &res = data.back();
-		SetBitByte(res, tail, s.length, s.val);
-		tail += s.length;
-	}
-	else
-	{
-		int sPos = 0;
-		if (remainBit > 0)
-		{
-			uint8_t res = GetBitSymbol(s, sPos, remainBit);
-			uint8_t &last = data.back();
-			SetBitByte(last, tail, remainBit, res);
-			sPos += remainBit;
-		}
-		tail = 8;
-		while (s.length - sPos > 8)
-		{
-			uint8_t res = GetBitSymbol(s, sPos, 8);
-			data.push_back(res);
-			sPos += 8;
-		}
-		if (s.length - sPos > 0)
-		{
-			tail = s.length - sPos;
-			uint8_t res = GetBitSymbol(s, sPos, tail);
-			uint8_t last = 0;
-			SetBitByte(last, 0, tail, res);
-			data.push_back(last);
-		}
-	}
-}
-
-int BitStream::Get(Symbol &s)
-{
-	if (s.length > 16 || s.length < 0)
-	{
-		fprintf(stderr, "[Error] Bitstream get length %d\n", s.length);
-		return -1;
-	}
-	s.val = 0;
-	int remainBit = 8 - head;
-	if (remainBit > s.length)
-	{
-		s.val = GetBitByte(data[readIdx], head, s.length);
-		head += s.length;
-	}
-	else
-	{
-		int sPos = 0;
-		uint8_t res = 0;
-		if (remainBit > 0)
-		{
-			res = GetBitByte(data[readIdx], head, remainBit);
-			SetBitSymbol(s, sPos, remainBit, res);
-			sPos += remainBit;
-		}
-		readIdx++;
-		head = 0;
-		while (s.length - sPos >= 8)
-		{
-			SetBitSymbol(s, sPos, 8, data[readIdx++]);
-			sPos += 8;
-			if (readIdx >= data.size())
-			{
-				fprintf(stderr, "[Error] Get bit more than have\n");
-				return -1;
-			}
-		}
-		if (s.length - sPos > 0)
-		{
-			head = s.length - sPos;
-			res = GetBitByte(data[readIdx], 0, head);
-			SetBitSymbol(s, sPos, head, res);
-		}
-	}
-	return 0;
-}
-
-int BitStream::print()
-{
-	for (auto &i : data)
-	{
-		printf("%x ", i);
-	}
-	printf("\n");
-	return data.size() * 8 - tail;
-}
-
-int BitStream::GetData(uint8_t **t)
-{
-	if (t != NULL)
-		*t = data.data();
-	return data.size();
-}
-
-void BitStream::SetData(std::vector<uint8_t>::iterator begin, std::vector<uint8_t>::iterator end)
-{
-	data = std::vector<uint8_t>(begin, end);
-	tail = 8;
-	head = 0;
-	readIdx = 0;
-}
-
-int JpegWriter::Encode(const ::Img<Rgb>& s, int level)
+int JpegCoder::Encode(const ::Img<Rgb>& s, int level)
 {
 	data.clear();
 	::Img<Yuv> imgy = ImgRgb2YCbCr(s);
@@ -348,17 +121,16 @@ int JpegWriter::Encode(const ::Img<Rgb>& s, int level)
 	ZigZag<int>(quant);
 	ImgBlockCode code = RunLengthCode(quant);
 	BitStream imgStream;
-	Huffman yDcHuff, yAcHuff, uvDcHuff, uvAcHuff;
-	BuildHuffman(code, yDcHuff, yAcHuff, uvDcHuff, uvAcHuff);
-	if (HuffmanEncode(code, imgStream, yDcHuff, yAcHuff, uvDcHuff, uvAcHuff))
+	BuildHuffman(code);
+	if (HuffmanEncode(code, imgStream))
 	{
 		fprintf(stderr, "[Error] Huffman encode error\n");
 		return -1;
 	}
 	//Write 
-	PicHead();
-	QuantTable(level);
-	PicInfo(s.w, s.h);
+	EncodePicHead();
+	EncodeQuantTable(level);
+	EncodePicInfo(s.w, s.h);
 	//huffman table
 	Huffman *huff[] = { &yDcHuff, &yAcHuff, &uvDcHuff, &uvAcHuff };
 	bool isDc[] = { true , false, true, false};
@@ -366,15 +138,86 @@ int JpegWriter::Encode(const ::Img<Rgb>& s, int level)
 	for (int tables = 0; tables < 4; ++tables) {
 		const int* bitSize = huff[tables]->GetSize();
 		const std::vector<int>& bitTable = huff[tables]->GetTable();
-		HuffmanTable(bitSize, bitTable, isDc[tables], htid[tables]);
+		EncodeHuffmanTable(bitSize, bitTable, isDc[tables], htid[tables]);
 	}
 	uint8_t *imgData = NULL;
 	int imgLength = imgStream.GetData(&imgData);
-	Img(imgData, imgLength);
+	EncodeImg(imgData, imgLength);
 	return 0;
 }
 
-int JpegWriter::Write(const char * fileName)
+int JpegCoder::Decode(const Img<Rgb>& t)
+{
+	int idx = 0;
+	int w = 0, h = 0;
+	int componentQuantTable[3];//quant table each component use
+	bool isCommand = false;//Read 0xff
+	uint8_t command = 0;
+	bool finished = false;
+	while (idx < data.size() && !finished) {
+		if (data[idx] == 0xff) {
+			//read 0xff, parpre for command
+			isCommand = true;
+			continue;
+		}
+		if (!isCommand && data[idx] != 0xff) {
+			fprintf(stderr, "[Error] Decode error, Unexpected byte 0x%u at %d\n", data[idx], idx);
+			return -1;
+		}
+		command = data[idx];
+		isCommand = false;
+		//no length commmand
+		bool noLength = false;
+		//TODO no length
+
+		if (noLength) {
+			continue;
+		}
+
+		if (idx + 2 >= data.size()) {
+			fprintf(stderr, "[Error] Read error, need more bytes than read\n");
+			return -1;
+		}
+		int length = Read16(idx + 1);//Get segment length
+		if (idx + 1 + length >= data.size()) {//Check data size
+			fprintf(stderr, "[Error] Read error, need more bytes than read\n");
+			return -1;
+		}
+		int returnVal = 0;
+		switch (command) {
+		case 0xe0:
+			//picture head, not nessary for decode
+			break;
+		case 0xdb:
+			//Quantization table
+			returnVal = DecodeQuantTable(idx + 3, length - 2);//length shoule - 2bytes for length itself
+			break;
+		case 0xc0:
+			returnVal = DecodePicInfo(idx + 3, length - 2, w, h);
+			break;
+		case 0xc4:
+			//huffman table
+			returnVal = DecodeHuffmanTable(idx + 3, length - 2);
+			break;
+		case 0xda:
+			//img table
+			returnVal = DecodeImg(idx + 3, length - 2);
+			finished = true;
+			break;
+		default:
+			//other unncessary code
+			break;
+		}
+		if (returnVal != 0) {
+			fprintf(stderr, "[Error] Decode error, exit\n");
+			return -1;
+		}
+		idx += length;
+	}
+	return 0;
+}
+
+int JpegCoder::Write(const char * fileName)
 {
 	std::ofstream fd(fileName, std::ofstream::binary | std::ofstream::trunc);
 	if (!fd) {
@@ -386,7 +229,37 @@ int JpegWriter::Write(const char * fileName)
 	return 0;
 }
 
-void JpegWriter::PicHead()
+int JpegCoder::Read(const char * fileName)
+{
+	//Clear all
+	data.clear();
+	for (auto &t : qTable) {
+		t.clear();
+	}
+	//Read data
+	std::ifstream fd;
+	fd.open(fileName, std::ifstream::binary);
+	if (!fd) {
+		fprintf(stderr, "[Error] Cannot read file %s\n", fileName);
+		return -1;
+	}
+	fd.seekg(0, fd.end);
+	int length = fd.tellg();
+	uint8_t* buf = new uint8_t[length];
+	fd.seekg(0, fd.beg);
+	printf("[Reading] %d bytes\n", length);
+	fd.read((char*)buf, length);
+	if (!fd) {
+		fprintf(stderr, "[Error] Read error\n");
+		return -1;
+	}
+	data.insert(data.end(), buf, buf + length);
+	delete[] buf;
+	return 0;
+}
+
+
+void JpegCoder::EncodePicHead()
 {
 	static const uint8_t headInfo[] = {
 		0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00,
@@ -395,7 +268,7 @@ void JpegWriter::PicHead()
 	data.insert(data.end(), headInfo, headInfo + sizeof(headInfo));
 }
 
-void JpegWriter::QuantTable(int level)
+void JpegCoder::EncodeQuantTable(int level)
 {
 	/*The first table, for Y**************************/
 	//write quanttable symbol
@@ -431,7 +304,7 @@ void JpegWriter::QuantTable(int level)
 	}
 }
 
-void JpegWriter::PicInfo(uint16_t w, uint16_t h)
+void JpegCoder::EncodePicInfo(uint16_t w, uint16_t h)
 {
 	//Id
 	data.push_back(0xff);
@@ -463,7 +336,7 @@ void JpegWriter::PicInfo(uint16_t w, uint16_t h)
 	}
 }
 
-void JpegWriter::HuffmanTable(const int* bitSize, const std::vector<int>& bitTable, bool isDc, uint8_t htid)
+void JpegCoder::EncodeHuffmanTable(const int* bitSize, const std::vector<int>& bitTable, bool isDc, uint8_t htid)
 {
 	data.push_back(0xff);
 	data.push_back(0xc4);
@@ -484,7 +357,7 @@ void JpegWriter::HuffmanTable(const int* bitSize, const std::vector<int>& bitTab
 	}
 }
 
-void JpegWriter::Img(uint8_t * s, int length)
+void JpegCoder::EncodeImg(uint8_t * s, int length)
 {
 	//write header
 	data.push_back(0xff);
@@ -519,6 +392,543 @@ void JpegWriter::Img(uint8_t * s, int length)
 	//End of data
 	data.push_back(0xff);
 	data.push_back(0xd9);
+}
+
+int JpegCoder::DecodeQuantTable(int base, int length)
+{
+	if (length != 65) {//64 value and 1 QT info
+		fprintf(stderr, "[Error] Bad quant table\n");
+		return -1;
+	}
+	uint8_t res;
+	res = data[base];//qt info
+	if (res >> 4 != 0) {
+		fprintf(stderr, "[Error] Can only handle 8bit quantization table\n");
+		return -1;
+	}
+	std::vector<int>& table = qTable[res&0x0f];//table id
+	table.assign(64, 0);
+	for (int i = 1; i <= 64; ++i) {
+		table[ZIGZAG[i]] = data[base + i];
+	}
+	return 0;
+}
+
+int JpegCoder::DecodePicInfo(int base, int length, int & w, int & h)
+{
+	if (length != 15) {
+		fprintf(stderr, "[Error] Can only handle picture info segment with length 17\n");
+		return -1;
+	}
+	//picture info
+	/*
+	Name		length	begin	end
+	Precision	8		0		1
+	Height		16		1		3
+	Wight		16		3		5
+	Components	8		5		6
+	Each Component		Each Component
+	ComponentId	8		6	9	12
+	SampleRate	8		7	10	13
+	QuantTable	8		8	11	14
+	*/
+	if (data[base] != 8 || data[base + 5] != 3) {
+		fprintf(stderr, "[Error] Can only handle 8bit precision and 3 component\n");
+		return -1;
+	}
+	h = Read16(base + 1);
+	w = Read16(base + 3);
+	uint8_t sample[3], quantTable[3];
+	bool getYuv[3] = {};
+	for (int i = 6; i <= 12; i += 3) {
+		int id = data[base + i];
+		if (id || id>3) {
+			fprintf(stderr, "[Error] Only support YCbCr\n");
+			return -1;
+		}
+		sample[id - 1] = data[base + i + 1];
+		quantTable[id - 1] = data[base + i + 2];
+	}
+	if (sample[0] != sample[1] || sample[1] != sample[2]) {
+		fprintf(stderr, "[Error] Down sample are not supported\n");
+		return -1;
+	}
+	if (quantTable[1] != quantTable[2]) {
+		fprintf(stderr, "[Error] Cb and Cr only can share the same quantization table\n");
+		return -1;
+	}
+	pYTable = &qTable[quantTable[0]];
+	pUvTable = &qTable[quantTable[1]];
+	return 0;
+}
+
+int JpegCoder::DecodeHuffmanTable(int base, int length)
+{
+	if (length < 17) {
+		fprintf(stderr, "[Error] Huffman table length error\n");
+		return -1;
+	}
+	uint8_t ht = data[base];
+	int id = ht & 0x0f;
+	if (id > 3) {
+		fprintf(stderr, "[Error] HT id should be 0-3\n");
+		return -1;
+	}
+	bool isDc = true;
+	if ((ht >> 4) & 1)
+		isDc = false;
+	if (ht >> 5 != 0) {
+		fprintf(stderr, "[Warning] Check error, ht high 3 bit should be 0\n");
+	}
+	int numCode = 0;
+	for (int i = 0; i < 16; ++i) {
+		numCode += data[base + i + 1];
+	}
+	if (17 + numCode != length) {
+		fprintf(stderr, "[Error] Huffman table error\n");
+		return -1;
+	}
+	Huffman *pTable;
+	if (isDc) {
+		pTable = &dcHuff[id];
+	}
+	else {
+		pTable = &acHuff[id];
+	}
+	pTable->SetTable(data.data()+base+1, data.data()+base+17, numCode);
+	return 0;
+}
+
+int JpegCoder::DecodeImg(int base, int length)
+{
+	if (length != 10) {
+		fprintf(stderr, "[Error] Img segment length error\n");
+		return -1;
+	}
+	int acHuffId[3] = {};
+	int dcHuffId[3] = {};
+	if (data[base] != 3) {
+		fprintf(stderr, "[Error] Only support 3 component\n");
+		return -1;
+	}
+	for (int i = 1; i <= 5; i += 2) {
+		int id = data[base + i];
+		if (id < 1 || id > 3) {
+			fprintf(stderr, "[Error] Only support Y Cb Cr\n");
+			return -1;
+		}
+		acHuffId[id - 1] = data[base + i + 1] & 0x0f;
+		dcHuffId[id - 1] = data[base + i + 1] >> 4;
+	}
+	if (dcHuffId[1] != dcHuffId[2] || acHuffId[1] != acHuffId[2]) {
+		fprintf(stderr, "[Error] Cb and Cr should share the same huffman table, this software do not support two huffman tables\n");
+		return -1;
+	}
+	yDcHuff = dcHuff[dcHuffId[0]];
+	yAcHuff = acHuff[acHuffId[0]];
+	uvDcHuff = dcHuff[dcHuffId[1]];
+	uvAcHuff = acHuff[acHuffId[1]];
+
+	return 0;
+}
+
+
+//Quant
+template <class T>
+ImgBlock<int> JpegCoder::Quant(T &block, int level)
+{
+	int *yTable = GetYTable(level);
+	int *uvTable = GetUvTable(level);
+	ImgBlock<int> ans;
+	ans.w = block.w;
+	ans.h = block.h;
+	ans.wb = block.wb;
+	ans.hb = block.hb;
+	ans.data = std::vector<Block<int>>(ans.wb * ans.hb);
+	for (int i = 0; i < ans.wb * ans.hb; ++i)
+	{
+		for (int j = 0; j < 64; ++j)
+		{
+			ans.data[i].y[j] = static_cast<int>(block.data[i].y[j] / yTable[j]);
+			ans.data[i].u[j] = static_cast<int>(block.data[i].u[j] / uvTable[j]);
+			ans.data[i].v[j] = static_cast<int>(block.data[i].v[j] / uvTable[j]);
+		}
+	}
+	return ans;
+}
+
+template <class T>
+ImgBlock<double> JpegCoder::Iquant(T &block)
+{
+	ImgBlock<double> ans;
+	ans.w = block.w;
+	ans.h = block.h;
+	ans.wb = block.wb;
+	ans.hb = block.hb;
+	ans.data = std::vector<Block<double>>(ans.wb * ans.hb);
+	for (int i = 0; i < ans.wb * ans.hb; ++i)
+	{
+		for (int j = 0; j < 64; ++j)
+		{
+			ans.data[i].y[j] = block.data[i].y[j] * yTable[j];
+			ans.data[i].u[j] = block.data[i].u[j] * uvTable[j];
+			ans.data[i].v[j] = block.data[i].v[j] * uvTable[j];
+		}
+	}
+	return ans;
+}
+
+//ZigZag
+
+template <class T>
+void JpegCoder::ZigZag(ImgBlock<T> &block)
+{
+	Block<T> res;
+	for (int i = 0; i < block.wb * block.hb; ++i)
+	{
+		T *s[] = { block.data[i].y, block.data[i].u, block.data[i].v };
+		T *t[] = { res.y, res.u, res.v };
+		for (int color = 0; color < 3; ++color)
+		{
+			for (int j = 0; j < 64; ++j)
+			{
+				t[color][j] = s[color][ZIGZAG[j]];
+			}
+			for (int j = 0; j < 64; ++j)
+			{
+				s[color][j] = t[color][j];
+			}
+		}
+	}
+}
+
+template <class T>
+void JpegCoder::IZigZag(ImgBlock<T> &block)
+{
+	Block<T> res;
+	for (int i = 0; i < block.wb * block.hb; ++i)
+	{
+		T *s[] = { block.data[i].y, block.data[i].u, block.data[i].v };
+		T *t[] = { res.y, res.u, res.v };
+		for (int color = 0; color < 3; ++color)
+		{
+			for (int j = 0; j < 64; ++j)
+			{
+				t[color][ZIGZAG[j]] = s[color][j];
+			}
+			for (int j = 0; j < 64; ++j)
+			{
+				s[color][j] = t[color][j];
+			}
+		}
+	}
+}
+
+ImgBlockCode JpegCoder::RunLengthCode(const ImgBlock<int> &block)
+{
+	ImgBlockCode code;
+	code.w = block.w;
+	code.h = block.h;
+	code.wb = block.wb;
+	code.hb = block.hb;
+	code.data = std::vector<BlockCode>(code.wb * code.hb);
+	int lastYDc = 0, lastUDc = 0, lastVDc = 0;
+	for (int i = 0; i < block.wb * block.hb; ++i)
+	{
+		/*get dc**********************************************************/
+		int diffY = block.data[i].y[0] - lastYDc;
+		int diffU = block.data[i].u[0] - lastUDc;
+		int diffV = block.data[i].v[0] - lastVDc;
+		//code dc
+		code.data[i].ydc = GetVLI(diffY);
+		code.data[i].udc = GetVLI(diffU);
+		code.data[i].vdc = GetVLI(diffV);
+		lastYDc = block.data[i].y[0];
+		lastUDc = block.data[i].u[0];
+		lastVDc = block.data[i].v[0];
+		/*get ac*********************************************************/
+		const int *s[] = { block.data[i].y, block.data[i].u, block.data[i].v };
+		std::vector<std::pair<uint8_t, Symbol>> *t[] = { &code.data[i].yac, &code.data[i].uac, &code.data[i].vac };
+		for (int color = 0; color < 3; ++color)
+		{
+			int zeroNum = 0;
+			auto ss = s[color];
+			auto tt = t[color];
+			//find eob
+			int eob = 0;
+			for (int i = 63; i >= 0; --i)
+			{
+				if (ss[i] != 0)
+				{
+					eob = i;
+					break;
+				}
+			}
+			for (int i = 1; i <= eob; ++i)
+			{
+				if (ss[i] == 0)
+				{
+					zeroNum++;
+					if (zeroNum == 16)
+					{
+						zeroNum = 0;
+						tt->emplace_back(0xf0, Symbol{ 0, 0 });
+					}
+				}
+				else
+				{
+					Symbol val = GetVLI(ss[i]);
+					uint8_t head = 0;
+					head |= val.length & 0x0f;
+					head |= (zeroNum & 0x0f) << 4;
+					tt->emplace_back(head, val);
+					zeroNum = 0;
+				}
+			}
+			if (eob < 63)
+			{
+				tt->emplace_back(0x00, Symbol{ 0, 0 });
+			}
+		}
+	}
+	return code;
+}
+
+ImgBlock<int>  JpegCoder::RunLengthDecode(const ImgBlockCode &code)
+{
+	ImgBlock<int> block;
+	block.w = code.w;
+	block.h = code.h;
+	block.wb = code.wb;
+	block.hb = code.hb;
+	int size = block.wb * block.hb;
+	block.data = std::vector<Block<int>>(size);
+	int lastYDc = 0;
+	int lastUDc = 0;
+	int lastVDc = 0;
+	for (int i = 0; i < size; ++i)
+	{
+		lastYDc += DeVLI(code.data[i].ydc);
+		lastUDc += DeVLI(code.data[i].udc);
+		lastVDc += DeVLI(code.data[i].vdc);
+		block.data[i].y[0] = lastYDc;
+		block.data[i].u[0] = lastUDc;
+		block.data[i].v[0] = lastVDc;
+		int *t[] = { block.data[i].y, block.data[i].u, block.data[i].v };
+		const std::vector<std::pair<uint8_t, Symbol>> *s[] = { &code.data[i].yac, &code.data[i].uac, &code.data[i].vac };
+		for (int color = 0; color < 3; ++color)
+		{
+			int *tt = t[color];
+			const std::vector<std::pair<uint8_t, Symbol>> &ss = *s[color];
+			int idx = 1;
+			for (auto &p : ss)
+			{
+				uint8_t head = p.first;
+				Symbol data = p.second;
+				if (head == 0x00)
+				{ //EOB
+					break;
+				}
+				int zeros = head >> 4;
+				idx += zeros;
+				if (idx >= 64)
+				{
+					fprintf(stderr, "[Error] RunLengthDecode error, try to get idx > 64\n");
+					return block;
+				}
+				data.length = head & 0x0f;
+				tt[idx] = DeVLI(data);
+				idx++;
+			}
+		}
+	}
+	return block;
+}
+
+void JpegCoder::BuildHuffman(ImgBlockCode &block)
+{
+	for (auto &b : block.data)
+	{
+		yDcHuff.Add(b.ydc.length);
+		uvDcHuff.Add(b.udc.length);
+		uvDcHuff.Add(b.vdc.length);
+		for (auto &val : b.yac)
+			yAcHuff.Add(val.first);
+		for (auto &val : b.uac)
+			uvAcHuff.Add(val.first);
+		for (auto &val : b.vac)
+			uvAcHuff.Add(val.first);
+	}
+	yDcHuff.BuildTable();
+	yAcHuff.BuildTable();
+	uvDcHuff.BuildTable();
+	uvAcHuff.BuildTable();
+
+	//print huffman table
+	printf("L Dc table\n");
+	yDcHuff.PrintTable();
+	printf("L Ac table\n");
+	yAcHuff.PrintTable();
+	printf("C Dc table\n");
+	uvDcHuff.PrintTable();
+	printf("C Ac table\n");
+	uvAcHuff.PrintTable();
+}
+
+int JpegCoder::HuffmanEncode(ImgBlockCode &block, BitStream &stream)
+{
+
+	auto PrintErr = [](std::string msg = "") {
+		fprintf(stderr, "[Error] Huffman Encode error %s\n", msg.data());
+	};
+
+	for (auto &b : block.data)
+	{
+		Symbol s;
+		Symbol *dc[] = { &b.ydc, &b.udc, &b.vdc };
+		std::vector<std::pair<uint8_t, Symbol>> *ac[] = { &b.yac, &b.uac, &b.vac };
+		Huffman *dcCoder[] = { &yDcHuff, &uvDcHuff, &uvDcHuff };
+		Huffman *acCoder[] = { &yAcHuff, &uvAcHuff, &uvAcHuff };
+		for (int color = 0; color < 3; ++color)
+		{
+			if (dcCoder[color]->Encode(dc[color]->length, s))
+			{
+				PrintErr("Dc");
+				return -1;
+			}
+			stream.Add(s);
+			stream.Add(*dc[color]);
+			for (auto &val : *ac[color])
+			{
+				if (acCoder[color]->Encode(val.first, s))
+				{
+					PrintErr("Ac");
+					return -1;
+				}
+				stream.Add(s);
+				stream.Add(val.second);
+			}
+		}
+	}
+	return 0;
+}
+
+int JpegCoder::HuffmanDecode(BitStream &s, ImgBlockCode &code)
+{
+	if (code.w == 0 || code.wb == 0 || code.h == 0 || code.hb == 0 || code.data.size() != code.hb * code.wb)
+	{
+		fprintf(stderr, "[Error] Huffman decode need img size\n");
+		return -1;
+	}
+	int blockId = 0;
+	while (blockId < code.wb * code.hb)
+	{
+		BlockCode &b = code.data[blockId];
+		Symbol *dc[] = { &b.ydc, &b.udc, &b.vdc };
+		std::vector<std::pair<uint8_t, Symbol>> *ac[] = { &b.yac, &b.uac, &b.vac };
+		Huffman *dcCoder[] = { &yDcHuff, &uvDcHuff, &uvDcHuff };
+		Huffman *acCoder[] = { &yAcHuff, &uvAcHuff, &uvAcHuff };
+		for (int color = 0; color < 3; color++)
+		{
+			Symbol readData;
+			readData.length = 0;
+			readData.val = 0;
+			Symbol tmp;
+			tmp.length = 1;
+			tmp.val = 0;
+			uint8_t dcLength = 0;
+			//Get Dc
+			do
+			{
+				tmp.length = 1;
+				s.Get(tmp);
+				readData.length++;
+				readData.val = readData.val << 1 | tmp.val;
+				if (readData.length > 16)
+				{
+					fprintf(stderr, "[Error] Huffman decode error, dc decode error\n");
+					return -1;
+				}
+			} while (dcCoder[color]->Decode(readData, dcLength));
+			readData.length = dcLength;
+			s.Get(readData);
+			*dc[color] = readData;
+			//Get Ac
+			int numValue = 1;
+			while (numValue < 64)
+			{
+				readData.length = 0;
+				readData.val = 0;
+				uint8_t acVal = 0;
+				do
+				{
+					tmp.length = 1;
+					tmp.val = 0;
+					s.Get(tmp);
+					readData.length++;
+					readData.val = (readData.val << 1) | tmp.val & 1;
+					if (readData.length > 16)
+					{
+						fprintf(stderr, "[Error] Huffman decode error, ac decode error\n");
+						return -1;
+					}
+				} while (acCoder[color]->Decode(readData, acVal));
+				if (acVal == 0xf0)
+				{
+					numValue += 16;
+					ac[color]->emplace_back(acVal, Symbol{ 0, 0 });
+					continue;
+				}
+				if (acVal == 0)
+				{
+					//EOB end of block
+					ac[color]->emplace_back(0x00, Symbol{ 0, 0 });
+					break;
+				}
+				int zeroNum = acVal >> 4;
+				readData.length = acVal & 0x0f;
+				s.Get(readData);
+				numValue += zeroNum + 1;
+				ac[color]->emplace_back(acVal, readData);
+			}
+		}
+		blockId++;
+	}
+	return 0;
+}
+
+Symbol JpegCoder::GetVLI(int val)
+{
+	if (val == 0)
+		return { 0, 0 };
+	int middle = (val > 0) ? val : -val;
+	Symbol ans;
+	ans.length = 0;
+	while (middle >> ans.length > 0)
+	{
+		ans.length++;
+	}
+	if (ans.length > 11)
+	{
+		fprintf(stderr, "[Warning] VLI value >= 2048\n");
+	}
+	if (val < 0)
+		ans.val = (~middle) & ((1 << ans.length) - 1);
+	else
+		ans.val = middle;
+	return ans;
+}
+
+int JpegCoder::DeVLI(Symbol s)
+{
+	if (s.length == 0)
+		return 0;
+	if (s.val >> (s.length - 1) & 0x01)
+	{
+		return s.val;
+	}
+	int ans = ((~s.val) & ((1 << s.length) - 1));
+	return -ans;
 }
 
 }; //namespace jpeg

@@ -4,23 +4,38 @@
 #include <unordered_map>
 #include <queue>
 
-#include "jpeg.h"
 #include "types.h"
 
 namespace jpeg
 {
+	class BitStream {
+	public:
+		void Add(const Symbol& s);
+		int Get(Symbol& s);
+		int print();//for debug
+		int GetData(uint8_t**);
+		void SetData(std::vector<uint8_t>::iterator begin, std::vector<uint8_t>::iterator end);
+	private:
+		std::vector<uint8_t> data;
+		int tail = 8;
+		int head = 0;
+		unsigned int readIdx = 0;
+
+	};
+
 class Huffman
 {
 public:
 	/*Add a value to Huffman tree, statistic frequences*/
 	void Add(int val);
-	void SetTable(uint8_t *bitSize, uint8_t *bitTable, const int tableLength);
+	void SetTable(const uint8_t *bitSize, const uint8_t *bitTable, const int tableLength);
 	void BuildTable();
 	void PrintTable();
 	int Encode(uint8_t source, Symbol &target);
 	int Decode(Symbol &source, uint8_t &target);
 	const int* GetSize()const;
 	const std::vector<int>& GetTable()const;
+	Huffman& operator=(const Huffman& s);
 
 private:
 	void BuildSymbolMap();
@@ -32,13 +47,8 @@ private:
 	std::map<int, Symbol> symbolMap; //for encode, value to symbol
 	std::map<Symbol, int> valueMap;  //for decode, symbol to value
 };
-ImgBlockCode RunLengthCode(const ImgBlock<int> &block);
-ImgBlock<int> RunLengthDecode(const ImgBlockCode &code);
-void BuildHuffman(ImgBlockCode &block, Huffman &yDcHuff, Huffman &yAcHuff, Huffman &uvDcHuff, Huffman &uvAcHuff);
-int HuffmanEncode(ImgBlockCode &block, BitStream &stream, Huffman &yDcHuff, Huffman &yAcHuff, Huffman &uvDcHuff, Huffman &uvAcHuff);
-int HuffmanDecode(BitStream &s, ImgBlockCode &code, Huffman &yDcHuff, Huffman &yAcHuff, Huffman &uvDcHuff, Huffman &uvAcHuff);
-Symbol GetVLI(int val);
-int DeVLI(Symbol s);
+
+
 
 }; //namespace jpeg
 

@@ -8,14 +8,14 @@ namespace jpeg {
 	void IDCTCore(double *);
 	void FDCTRaw(Block<double> & block, void(*core)(double*));
 
-	ImgBlock<double> FDCT(ImgBlock<double> block) {
+	ImgBlock<double> JpegCoder::FDCT(ImgBlock<double> block) {
 		for (auto &b : block.data) {
 			FDCTRaw(b, DCTCore);
 		}
 		return block;
 	}
 
-	ImgBlock<double> FIDCT(ImgBlock<double> block) {
+	ImgBlock<double> JpegCoder::FIDCT(ImgBlock<double> block) {
 		for (auto &b : block.data) {
 			FDCTRaw(b, IDCTCore);
 		}
