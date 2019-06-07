@@ -61,6 +61,10 @@ namespace jpeg
 		int remainBit = 8 - head;
 		if (remainBit > s.length)
 		{
+			if (readIdx >= data.size()) {
+				fprintf(stderr, "[Error] Read error, want to get more than have\n");
+				return -1;
+			}
 			s.val = GetBitByte(data[readIdx], head, s.length);
 			head += s.length;
 		}
@@ -113,9 +117,9 @@ namespace jpeg
 		return data.size();
 	}
 
-	void BitStream::SetData(std::vector<uint8_t>::iterator begin, std::vector<uint8_t>::iterator end)
+	void BitStream::SetData(const std::vector<uint8_t> &s)
 	{
-		data = std::vector<uint8_t>(begin, end);
+		data = s;
 		tail = 8;
 		head = 0;
 		readIdx = 0;

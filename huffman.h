@@ -14,7 +14,7 @@ namespace jpeg
 		int Get(Symbol& s);
 		int print();//for debug
 		int GetData(uint8_t**);
-		void SetData(std::vector<uint8_t>::iterator begin, std::vector<uint8_t>::iterator end);
+		void SetData(const std::vector<uint8_t>& s);
 	private:
 		std::vector<uint8_t> data;
 		int tail = 8;

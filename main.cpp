@@ -9,16 +9,18 @@
 
 using namespace std;
 
-char sourceFile[] = "test2.bmp";
-char jpegFile[] = "result2.jpg";
-char bmpFile[] = "result2.bmp";
-bool CheckStatified(double* coded, int* column, int* row, size_t codedSize, size_t HSize);
+char sourceFile[] = "test1.bmp";
+char jpegFile[] = "PsResult.jpg";
+char bmpFile[] = "resultPs.bmp";
 int main()
 {
-	Img<Rgb> img = bmp::ReadBmp(sourceFile);
-	jpeg::JpegCoder writer;
-	writer.Encode(img, 0);
-	writer.Write(jpegFile);
-
+	//Img<Rgb> img = bmp::ReadBmp(sourceFile);
+	Img<Rgb> decode;
+	jpeg::JpegCoder writer,reader;
+	//writer.Encode(img, 0);
+	//writer.Write(jpegFile);
+	reader.Read(jpegFile);
+	reader.Decode(decode);
+	bmp::WriteBmp(bmpFile, decode);
 	return 0;
 }

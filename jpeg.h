@@ -22,7 +22,7 @@ namespace jpeg {
 	class JpegCoder {
 	public:
 		int Encode(const Img<Rgb>& s, int level);
-		int Decode(const Img<Rgb>& t);
+		int Decode(Img<Rgb>& t);
 		int Write(const char* fileName);
 		int Read(const char* fileName);
 
@@ -71,6 +71,7 @@ namespace jpeg {
 		int DeVLI(Symbol s);
 		/*Data*/
 		std::vector<uint8_t> data;//Encoded data, write to file or read from file
+		std::vector<uint8_t> imgData;
 		Huffman yDcHuff, yAcHuff, uvDcHuff, uvAcHuff;//4 Huffman table
 		Huffman dcHuff[4], acHuff[4];
 		std::vector<int> qTable[16];//Quant table for decode, read from file. Not for encode!
