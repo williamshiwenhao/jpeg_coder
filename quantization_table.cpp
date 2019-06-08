@@ -1,7 +1,6 @@
 #include "jpeg.h"
 
 namespace jpeg {
-
 	static int yQuantTable[64] = {
 16, 11, 10, 16, 24, 40, 51, 61,
 12, 12, 14, 19, 26, 58, 60, 55,

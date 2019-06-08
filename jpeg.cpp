@@ -1,4 +1,3 @@
-
 #include <cstdio>
 #include <random>
 #include <algorithm>
@@ -12,7 +11,6 @@
 
 namespace jpeg
 {
-
 	static const int ZIGZAG[64] =
 	{
 		0, 1, 8, 16, 9, 2, 3, 10,
@@ -63,7 +61,6 @@ namespace jpeg
 		}
 	}
 
-
 	int JpegCoder::Encode(const ::Img<Rgb> &s, int level)
 	{
 		data.clear();
@@ -99,7 +96,7 @@ namespace jpeg
 		EncodeImg(imgData, imgLength);
 		return 0;
 	}
-	
+
 	int JpegCoder::Decode(Img<Rgb> &t)
 	{
 		unsigned idx = 0;
@@ -468,7 +465,6 @@ namespace jpeg
 
 	int JpegCoder::DecodeHuffmanTable(int base, int length)
 	{
-
 		if (length < 17)
 		{
 			fprintf(stderr, "[Error] Huffman table length error\n");
@@ -680,7 +676,6 @@ namespace jpeg
 		}
 	}
 
-
 	ImgBlockCode JpegCoder::RunLengthCode(const ImgBlock<int> &block)
 	{
 		ImgBlockCode code;
@@ -843,7 +838,6 @@ namespace jpeg
 
 	int JpegCoder::HuffmanEncode(ImgBlockCode &block, BitStream &stream)
 	{
-
 		auto PrintErr = [](std::string msg = "") {
 			fprintf(stderr, "[Error] Huffman Encode error %s\n", msg.data());
 		};
@@ -1023,5 +1017,4 @@ namespace jpeg
 		int ans = ((~s.val) & ((1 << s.length) - 1));
 		return -ans;
 	}
-
 }; //namespace jpeg

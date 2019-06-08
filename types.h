@@ -18,14 +18,12 @@ struct Yuv {
 	uint8_t cr;
 };
 
-
 template<class Color>
 struct Img {
 	int w, h;
 	Color *data;
 	Img() :w(0), h(0), data(NULL) {}
 };
-
 
 template<class T>
 struct Block {
@@ -51,7 +49,7 @@ struct Symbol {
 };
 
 struct BlockCode {
-	Symbol ydc,udc,vdc;
+	Symbol ydc, udc, vdc;
 	bool restart = false;
 	std::vector<std::pair<uint8_t, Symbol>> yac, uac, vac;//<zeroNumber|size, number in vli>
 };

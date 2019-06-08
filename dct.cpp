@@ -119,7 +119,6 @@ namespace jpeg {
 		vector[7] = S[7] * v27;
 	}
 
-
 	// A straightforward inverse of the forward algorithm.
 	void IDCTCore(double *vector) {
 		const double v15 = vector[0] / S[0];
@@ -167,5 +166,4 @@ namespace jpeg {
 		vector[6] = (v1 - v6) / 2;
 		vector[7] = (v0 - v7) / 2;
 	}
-
 };//namespace jpeg

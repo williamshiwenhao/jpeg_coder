@@ -3,7 +3,7 @@
 #define __UTILITIES_H__
 #include "types.h"
 //Change image color
-Img<Yuv> ImgRgb2YCbCr(const Img<Rgb> );
+Img<Yuv> ImgRgb2YCbCr(const Img<Rgb>);
 Img<Rgb> ImgYCbCr2Rgb(const Img<Yuv>);
 //Change color
 inline Yuv Rgb2YCbCr(const Rgb);

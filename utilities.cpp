@@ -1,4 +1,3 @@
-
 #include "utilities.h"
 
 Img<Yuv> ImgRgb2YCbCr(const Img<Rgb> imgrgb) {
@@ -49,7 +48,7 @@ inline uint8_t ColorCast(const T& dc) {
 
 static const double dctBase = 128;
 ImgBlock<double> Img2Block(Img<Yuv> img) {
-	int wb = (img.w >> 3) + ((img.w % 8 >0)?1 : 0);
+	int wb = (img.w >> 3) + ((img.w % 8 > 0) ? 1 : 0);
 	int hb = (img.h >> 3) + ((img.h % 8 > 0) ? 1 : 0);
 	ImgBlock<double> block;
 	block.w = img.w;
@@ -65,7 +64,7 @@ ImgBlock<double> Img2Block(Img<Yuv> img) {
 		int blkId = yb * wb + xb;
 		int xIn = x % 8;
 		int yIn = y % 8;
- 		int inId = yIn * 8 + xIn;
+		int inId = yIn * 8 + xIn;
 		block.data[blkId].y[inId] = img.data[i].y - dctBase;
 		block.data[blkId].u[inId] = img.data[i].cb - dctBase;
 		block.data[blkId].v[inId] = img.data[i].cr - dctBase;
@@ -95,5 +94,3 @@ Img<Yuv> Block2Img(ImgBlock<double>& block) {
 	}
 	return img;
 }
-
-
