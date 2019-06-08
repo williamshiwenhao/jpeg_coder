@@ -52,6 +52,7 @@ struct Symbol {
 
 struct BlockCode {
 	Symbol ydc,udc,vdc;
+	bool restart = false;
 	std::vector<std::pair<uint8_t, Symbol>> yac, uac, vac;//<zeroNumber|size, number in vli>
 };
 

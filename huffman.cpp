@@ -58,7 +58,7 @@ void BitStream::Add(const Symbol &s)
 // Method:    Get
 // FullName:  jpeg::BitStream::Get
 // Access:    public 
-// Returns:   int,0 for normal return, and -2 for meet end
+// Returns:   int,0 for normal return, and -2 for meet end£¬ -1
 // Qualifier:
 // Parameter: Symbol & s
 //************************************

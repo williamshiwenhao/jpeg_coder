@@ -156,7 +156,7 @@ namespace jpeg
 				returnVal = DecodePicInfo(idx + 3, length - 2, w, h);
 				break;
 			case 0xc4:
-				//huffman table
+				//Huffman table
 				returnVal = DecodeHuffmanTable(idx + 3, length - 2);
 				break;
 			case 0xda:
@@ -769,6 +769,11 @@ namespace jpeg
 		int lastVDc = 0;
 		for (int i = 0; i < size; ++i)
 		{
+			if (code.data[i].restart) {
+				lastYDc = 0;
+				lastUDc = 0;
+				lastVDc = 0;
+			}
 			lastYDc += DeVLI(code.data[i].ydc);
 			lastUDc += DeVLI(code.data[i].udc);
 			lastVDc += DeVLI(code.data[i].vdc);
@@ -910,6 +915,7 @@ namespace jpeg
 							fprintf(stderr, "[Error] Want to read more than have\n");
 							return -1;
 						}
+						b.restart = true;
 						tmp.length = 1;
 						tmp.val = 0;
 						readData.length = 0;
@@ -927,17 +933,9 @@ namespace jpeg
 				} while (dcCoder[color]->Decode(readData, dcLength));
 				readData.length = dcLength;
 				if (pStream->Get(readData) == -2) {
-					//meet the end, change stream
-					pStream++;
-					if (pStream == stream.end()) {
-						fprintf(stderr, "[Error] Want to read more than have\n");
-						return -1;
-					}
-					readData.length = dcLength;
-					if (pStream->Get(readData) == -2) {
-						fprintf(stderr, "[Error] Double end\n");
-						return -1;
-					}
+					//unexpected broken
+					fprintf(stderr, "[Error] Unexpected broken\n");
+					return -1;
 				}
 				*dc[color] = readData;
 				//Get Ac
@@ -952,18 +950,9 @@ namespace jpeg
 						tmp.length = 1;
 						tmp.val = 0;
 						if (pStream->Get(tmp) == -2) {
-							//meet the end, change stream
-							pStream++;
-							if (pStream == stream.end()) {
-								fprintf(stderr, "[Error] Want to read more than have\n");
-								return -1;
-							}
-							tmp.length = 1;
-							tmp.val = 0;
-							readData.length = 0;
-							readData.val = 0;
-							uint8_t acVal = 0;
-							continue;
+							//unexpected broken
+							fprintf(stderr, "[Error] Unexpected broken\n");
+							return -1;
 						}
 						readData.length++;
 						readData.val = (readData.val << 1) | tmp.val & 1;
@@ -988,17 +977,9 @@ namespace jpeg
 					int zeroNum = acVal >> 4;
 					readData.length = acVal & 0x0f;
 					if (pStream->Get(readData) == -2) {
-						//meet the end, change stream
-						pStream++;
-						if (pStream == stream.end()) {
-							fprintf(stderr, "[Error] Want to read more than have\n");
-							return -1;
-						}
-						readData.length = dcLength;
-						if (pStream->Get(readData) == -2) {
-							fprintf(stderr, "[Error] Double end\n");
-							return -1;
-						}
+						//unexpected broken
+						fprintf(stderr, "[Error] Unexpected broken\n");
+						return -1;
 					}
 					numValue += zeroNum + 1;
 					ac[color]->emplace_back(acVal, readData);
