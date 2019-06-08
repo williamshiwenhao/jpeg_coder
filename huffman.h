@@ -11,8 +11,8 @@ namespace jpeg
 class BitStream
 {
 public:
-	Bitstream() = default;
-	Bitstream(const std::vector<uint8_t> &data_)
+	BitStream() = default;
+	BitStream(const std::vector<uint8_t> &data_)
 	{
 		data = data_;
 		tail = 8;
@@ -35,7 +35,7 @@ private:
 class Huffman
 {
 public:
-	/*Add a value to Huffman tree, statistic frequences*/
+	/*Add a value to Huffman tree, statistic frequencies*/
 	void Add(int val);
 	void SetTable(const uint8_t *bitSize, const uint8_t *bitTable, const int tableLength);
 	void BuildTable();

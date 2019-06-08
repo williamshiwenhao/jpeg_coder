@@ -54,21 +54,29 @@ void BitStream::Add(const Symbol &s)
 	}
 }
 
+//************************************
+// Method:    Get
+// FullName:  jpeg::BitStream::Get
+// Access:    public 
+// Returns:   int,0 for normal return, and -2 for meet end
+// Qualifier:
+// Parameter: Symbol & s
+//************************************
 int BitStream::Get(Symbol &s)
 {
 	if (s.length > 16 || s.length < 0)
 	{
-		fprintf(stderr, "[Error] Bitstream get length %d\n", s.length);
+		fprintf(stderr, "[Error] BitStream get length %d\n", s.length);
 		return -1;
 	}
 	s.val = 0;
 	int remainBit = 8 - head;
-	if (remainBit > s.length)
+	if (remainBit >= s.length)
 	{
 		if (readIdx >= data.size())
 		{
-			fprintf(stderr, "[Error] Read error, want to get more than have\n");
-			return -1;
+			//more than have, next stream
+			return -2;
 		}
 		s.val = GetBitByte(data[readIdx], head, s.length);
 		head += s.length;
@@ -84,19 +92,26 @@ int BitStream::Get(Symbol &s)
 			sPos += remainBit;
 		}
 		readIdx++;
+		if (readIdx >= data.size()) {
+			//want more than have
+			return -2;
+		}
 		head = 0;
 		while (s.length - sPos >= 8)
 		{
-			SetBitSymbol(s, sPos, 8, data[readIdx++]);
-			sPos += 8;
 			if (readIdx >= data.size())
 			{
-				fprintf(stderr, "[Error] Get bit more than have\n");
-				return -1;
+				return -2;
 			}
+			SetBitSymbol(s, sPos, 8, data[readIdx++]);
+			sPos += 8;
 		}
 		if (s.length - sPos > 0)
 		{
+			if (readIdx >= data.size())
+			{
+				return -2;
+			}
 			head = s.length - sPos;
 			res = GetBitByte(data[readIdx], 0, head);
 			SetBitSymbol(s, sPos, head, res);

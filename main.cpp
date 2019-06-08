@@ -9,18 +9,30 @@
 
 using namespace std;
 
-char sourceFile[] = "test1.bmp";
-char jpegFile[] = "PsResult.jpg";
-char bmpFile[] = "resultPs.bmp";
+char encodeInput[] = "test1.bmp";
+char encodeOutput[] = "test1.jpg";
+char decodeInput[] = "PsResult.jpg";
+char decodeOutput[] = "test1Decode.bmp";
+
+void Encode() {
+	Img<Rgb> img = bmp::ReadBmp(encodeInput);
+	jpeg::JpegCoder writer;
+	writer.Encode(img, 0);
+	writer.Write(encodeOutput);
+}
+
+void Decode() {
+	Img<Rgb> decode;
+	jpeg::JpegCoder reader;
+
+	reader.Read(decodeInput);
+	reader.Decode(decode);
+	bmp::WriteBmp(decodeOutput, decode);
+}
+
 int main()
 {
-	//Img<Rgb> img = bmp::ReadBmp(sourceFile);
-	Img<Rgb> decode;
-	jpeg::JpegCoder writer,reader;
-	//writer.Encode(img, 0);
-	//writer.Write(jpegFile);
-	reader.Read(jpegFile);
-	reader.Decode(decode);
-	bmp::WriteBmp(bmpFile, decode);
+	//Encode();
+	Decode();
 	return 0;
 }
