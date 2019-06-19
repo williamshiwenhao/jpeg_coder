@@ -12,7 +12,6 @@
 
 namespace jpeg
 {
-
 	int *GetYTable(int level);
 	int *GetUvTable(int level);
 
@@ -81,7 +80,6 @@ namespace jpeg
 		std::vector<int> qTable[16]; //Quant table for decode, read from file. Not for encode!
 		std::vector<int> *pYTable, *pUvTable;
 	};
-
 }; //namespace jpeg
 
 #endif /*__JPEG_H__*/
